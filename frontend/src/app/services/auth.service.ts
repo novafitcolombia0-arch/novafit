@@ -40,7 +40,15 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    if (!token) return false;
+    try {
+      const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const { exp } = JSON.parse(atob(payload));
+      return exp * 1000 > Date.now();
+    } catch {
+      return false;
+    }
   }
 
   getHeaders(): HttpHeaders {
