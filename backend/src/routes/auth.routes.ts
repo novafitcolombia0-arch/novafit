@@ -1,11 +1,12 @@
-import { Router, Request, Response } from "express";
+import { Request, Response } from "express";
+import { createRouter } from "../middleware/errors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { AppDataSource } from "../config/data-source";
 import { User } from "../entities";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 
-const router = Router();
+const router = createRouter();
 const userRepo = () => AppDataSource.getRepository(User);
 
 router.post("/login", async (req: Request, res: Response) => {

@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.routes";
 import categoryRoutes from "./routes/category.routes";
 import productRoutes from "./routes/product.routes";
 import settingsRoutes from "./routes/settings.routes";
+import { errorHandler } from "./middleware/errors";
 
 dotenv.config();
 
@@ -25,6 +26,8 @@ app.use("/api/settings", settingsRoutes);
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+app.use(errorHandler);
 
 AppDataSource.initialize()
   .then(() => {

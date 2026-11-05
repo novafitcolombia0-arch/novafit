@@ -56,9 +56,12 @@ import { Category } from '../../../models/types';
                 </label>
               </div>
             </div>
-            <button type="submit"
-                    class="mt-4 bg-nova-dark text-white px-6 py-2 text-sm rounded hover:bg-opacity-90 transition">
-              {{ editingId ? 'Actualizar' : 'Crear' }}
+            @if (error) {
+              <p class="mt-4 text-sm text-red-600">{{ error }}</p>
+            }
+            <button type="submit" [disabled]="saving"
+                    class="mt-4 bg-nova-dark text-white px-6 py-2 text-sm rounded hover:bg-opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed">
+              {{ saving ? 'Guardando...' : (editingId ? 'Actualizar' : 'Crear') }}
             </button>
           </form>
         </div>
@@ -109,6 +112,8 @@ import { Category } from '../../../models/types';
 export class AdminCategoriesComponent implements OnInit {
   categories: Category[] = [];
   showForm = false;
+  saving = false;
+  error = '';
   editingId: number | null = null;
   form: Partial<Category> = { name: '', slug: '', description: '', image: '', isActive: true };
 
@@ -127,11 +132,19 @@ export class AdminCategoriesComponent implements OnInit {
   editCategory(cat: Category) { this.editingId = cat.id; this.form = { ...cat }; this.showForm = true; }
 
   saveCategory() {
-    if (this.editingId) {
-      this.api.updateCategory(this.editingId, this.form).subscribe(() => { this.resetForm(); this.loadCategories(); });
-    } else {
-      this.api.createCategory(this.form).subscribe(() => { this.resetForm(); this.loadCategories(); });
-    }
+    if (this.saving) return; // evita doble envío mientras sube la imagen
+    this.saving = true;
+    this.error = '';
+    const request = this.editingId
+      ? this.api.updateCategory(this.editingId, this.form)
+      : this.api.createCategory(this.form);
+    request.subscribe({
+      next: () => { this.saving = false; this.resetForm(); this.loadCategories(); },
+      error: (err) => {
+        this.saving = false;
+        this.error = err?.error?.message || 'No se pudo guardar la categoría';
+      },
+    });
   }
 
   deleteCategory(id: number) {
@@ -143,6 +156,7 @@ export class AdminCategoriesComponent implements OnInit {
   resetForm() {
     this.showForm = false;
     this.editingId = null;
+    this.error = '';
     this.form = { name: '', slug: '', description: '', image: '', isActive: true };
   }
 }

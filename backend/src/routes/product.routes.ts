@@ -1,9 +1,10 @@
-import { Router, Request, Response } from "express";
+import { Request, Response } from "express";
+import { createRouter } from "../middleware/errors";
 import { AppDataSource } from "../config/data-source";
 import { Product } from "../entities";
 import { authMiddleware } from "../middleware/auth";
 
-const router = Router();
+const router = createRouter();
 const productRepo = () => AppDataSource.getRepository(Product);
 
 router.get("/", async (req: Request, res: Response) => {
