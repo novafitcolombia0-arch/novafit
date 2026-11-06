@@ -130,7 +130,7 @@ import { CurrencyPipe } from '@angular/common';
               <tr class="border-t border-nova-pink">
                 <td class="px-6 py-4 text-sm font-medium text-nova-dark">{{ prod.name }}</td>
                 <td class="px-6 py-4 text-sm text-nova-gray">{{ prod.category?.name }}</td>
-                <td class="px-6 py-4 text-sm">{{ prod.price | currency:'COP':'symbol':'1.0-0' }}</td>
+                <td class="px-6 py-4 text-sm">{{ prod.price | currency:'COP':'$':'1.0-0' }} COP</td>
                 <td class="px-6 py-4 text-xs text-nova-gray">{{ getSizeLabels(prod.sizes) }}</td>
                 <td class="px-6 py-4">
                   <span [class.bg-green-100]="prod.isActive" [class.text-green-700]="prod.isActive"

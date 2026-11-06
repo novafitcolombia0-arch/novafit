@@ -37,7 +37,7 @@ import { CurrencyPipe } from '@angular/common';
           <div class="pt-1">
             <p class="text-nova-gray text-xs uppercase tracking-wider mb-1">{{ product.category.name }}</p>
             <h1 class="font-display text-2xl font-bold mb-2 text-nova-dark">{{ product.name }}</h1>
-            <p class="text-xl font-semibold text-nova-dark mb-4">{{ product.price | currency:'COP':'symbol':'1.0-0' }}</p>
+            <p class="text-xl text-nova-gray mb-4">{{ product.price | currency:'COP':'$':'1.0-0' }} COP</p>
 
             <div class="mb-4">
               <p class="text-sm font-medium mb-2 text-nova-dark">Talla:</p>

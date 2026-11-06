@@ -75,7 +75,7 @@ import { CurrencyPipe } from '@angular/common';
               }
             </div>
             <h3 class="font-medium text-sm group-hover:text-nova-rose transition text-nova-dark">{{ product.name }}</h3>
-            <p class="text-nova-gray text-sm mt-1">{{ product.price | currency:'COP':'symbol':'1.0-0' }}</p>
+            <p class="text-nova-gray text-sm mt-1">{{ product.price | currency:'COP':'$':'1.0-0' }} COP</p>
           </a>
         }
       </div>
