@@ -18,7 +18,7 @@ export class ProductSize {
   @Column({ default: 0 })
   stock: number;
 
-  @ManyToOne(() => Product, (product) => product.sizes)
+  @ManyToOne(() => Product, (product) => product.sizes, { onDelete: "CASCADE" })
   @JoinColumn({ name: "productId" })
   product: Product;
 
