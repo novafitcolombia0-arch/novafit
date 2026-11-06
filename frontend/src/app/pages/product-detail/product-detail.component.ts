@@ -37,7 +37,7 @@ import { CurrencyPipe } from '@angular/common';
           <div class="pt-1">
             <p class="text-nova-gray text-xs uppercase tracking-wider mb-1">{{ product.category.name }}</p>
             <h1 class="font-display text-2xl font-bold mb-2 text-nova-dark">{{ product.name }}</h1>
-            <p class="text-xl font-semibold text-nova-rose mb-4">{{ product.price | currency:'COP':'symbol':'1.0-0' }}</p>
+            <p class="text-xl font-semibold text-nova-dark mb-4">{{ product.price | currency:'COP':'symbol':'1.0-0' }}</p>
 
             <div class="mb-4">
               <p class="text-sm font-medium mb-2 text-nova-dark">Talla:</p>
@@ -135,15 +135,15 @@ import { CurrencyPipe } from '@angular/common';
                   <div class="px-4 pb-3 text-sm leading-relaxed border-t border-nova-blush">
                     <ul class="mt-3 space-y-2 text-nova-gray">
                       <li class="flex items-start gap-2">
-                        <span class="text-nova-rose font-semibold mt-0.5">Cali:</span>
+                        <span class="text-nova-dark font-semibold mt-0.5">Cali:</span>
                         <span>La entrega se hará de <strong class="text-nova-dark">1 a 2 días hábiles</strong>*</span>
                       </li>
                       <li class="flex items-start gap-2">
-                        <span class="text-nova-rose font-semibold mt-0.5">Ciudades principales:</span>
+                        <span class="text-nova-dark font-semibold mt-0.5">Ciudades principales:</span>
                         <span>La entrega se hará de <strong class="text-nova-dark">3 a 6 días hábiles</strong>*</span>
                       </li>
                       <li class="flex items-start gap-2">
-                        <span class="text-nova-rose font-semibold mt-0.5">Otras ciudades:</span>
+                        <span class="text-nova-dark font-semibold mt-0.5">Otras ciudades:</span>
                         <span>La entrega se hará de <strong class="text-nova-dark">3 a 8 días hábiles</strong>*</span>
                       </li>
                     </ul>

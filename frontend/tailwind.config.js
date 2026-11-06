@@ -5,15 +5,15 @@ module.exports = {
     extend: {
       colors: {
         nova: {
-          black: "#5a3a3a",
-          dark: "#8b5e5e",
-          rose: "#c08080",
-          blush: "#e0c0c0",
-          pink: "#ffe0e0",
-          sand: "#c0a080",
-          cream: "#faf5f2",
-          lightgray: "#e5e0dc",
-          gray: "#8a7a75",
+          black: "#000000",
+          dark: "#1e1e1e",
+          rose: "#b59677",
+          blush: "#e6e6e6",
+          pink: "#f8f0e4",
+          sand: "#b59677",
+          cream: "#ffffff",
+          lightgray: "#eae3e6",
+          gray: "#696969",
         },
       },
       fontFamily: {

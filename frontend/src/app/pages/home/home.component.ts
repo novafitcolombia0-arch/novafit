@@ -41,28 +41,21 @@ import { CurrencyPipe } from '@angular/common';
       }
 
       <div class="relative max-w-7xl mx-auto px-4 h-full flex flex-col items-center justify-center text-center">
-        <h1 class="font-display text-5xl md:text-7xl font-bold mb-4 tracking-wide">NOVA</h1>
-        <p class="text-lg md:text-xl text-nova-blush mb-8 tracking-widest uppercase">Moda Femenina</p>
-        <p class="text-nova-blush mb-8 max-w-md mx-auto">Descubre nuestra colección exclusiva de ropa femenina con estilo y elegancia.</p>
-        <a routerLink="/catalogo" class="inline-block bg-nova-dark text-white px-8 py-3 text-sm uppercase tracking-widest hover:bg-opacity-90 transition">Ver Colección</a>
+        <h1 class="font-display text-5xl md:text-7xl font-bold mb-8 tracking-wide">NOVA</h1>
+        <a routerLink="/catalogo" class="inline-block bg-nova-dark text-white px-8 py-3 text-sm uppercase tracking-widest hover:bg-opacity-90 transition">Shop Now</a>
       </div>
     </section>
 
     <section class="max-w-7xl mx-auto px-4 py-16">
-      <h2 class="font-display text-3xl font-bold text-center mb-12 text-nova-dark">Categorías</h2>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         @for (cat of categories; track cat.id) {
-          <a [routerLink]="['/catalogo']" [queryParams]="{categoria: cat.slug}"
-             class="group relative rounded-lg overflow-hidden aspect-square">
-            @if (cat.image) {
-              <img [src]="cat.image" [alt]="cat.name" class="absolute inset-0 w-full h-full object-cover">
-              <div class="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-50 transition"></div>
-              <span class="absolute inset-0 flex items-center justify-center text-white text-lg font-semibold group-hover:text-nova-sand transition">{{ cat.name }}</span>
-            } @else {
-              <div class="absolute inset-0 bg-nova-blush flex items-center justify-center">
-                <span class="text-lg font-semibold text-nova-dark group-hover:text-nova-rose transition">{{ cat.name }}</span>
-              </div>
-            }
+          <a [routerLink]="['/catalogo']" [queryParams]="{categoria: cat.slug}" class="group block">
+            <span class="block text-center text-lg font-semibold text-nova-dark mb-2 group-hover:text-nova-rose transition">{{ cat.name }}</span>
+            <div class="rounded-lg overflow-hidden aspect-square bg-nova-pink">
+              @if (cat.image) {
+                <img [src]="cat.image" [alt]="cat.name" class="w-full h-full object-cover">
+              }
+            </div>
           </a>
         }
       </div>
