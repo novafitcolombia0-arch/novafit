@@ -41,7 +41,8 @@ import { CurrencyPipe } from '@angular/common';
       }
 
       <div class="relative max-w-7xl mx-auto px-4 h-full flex flex-col items-center justify-center text-center">
-        <h1 class="font-display text-5xl md:text-7xl font-bold mb-8 tracking-wide">NOVA</h1>
+        <h1 class="font-display text-5xl md:text-7xl font-bold mb-4 tracking-wide">NOVA</h1>
+        <p class="text-lg md:text-xl text-nova-blush mb-8 tracking-widest uppercase">Muestra tu mejor versión</p>
         <a routerLink="/catalogo" class="inline-block bg-nova-dark text-white px-8 py-3 text-sm uppercase tracking-widest hover:bg-opacity-90 transition">Shop Now</a>
       </div>
     </section>
@@ -49,13 +50,17 @@ import { CurrencyPipe } from '@angular/common';
     <section class="max-w-7xl mx-auto px-4 py-16">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         @for (cat of categories; track cat.id) {
-          <a [routerLink]="['/catalogo']" [queryParams]="{categoria: cat.slug}" class="group block">
-            <span class="block text-center text-lg font-semibold text-nova-dark mb-2 group-hover:text-nova-rose transition">{{ cat.name }}</span>
-            <div class="rounded-lg overflow-hidden aspect-square bg-nova-pink">
-              @if (cat.image) {
-                <img [src]="cat.image" [alt]="cat.name" class="w-full h-full object-cover">
-              }
-            </div>
+          <a [routerLink]="['/catalogo']" [queryParams]="{categoria: cat.slug}"
+             class="group relative rounded-lg overflow-hidden aspect-square">
+            @if (cat.image) {
+              <img [src]="cat.image" [alt]="cat.name" loading="lazy" class="absolute inset-0 w-full h-full object-cover">
+              <div class="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-50 transition"></div>
+              <span class="absolute inset-0 flex items-center justify-center text-white text-lg font-semibold group-hover:text-nova-sand transition">{{ cat.name }}</span>
+            } @else {
+              <div class="absolute inset-0 bg-nova-pink flex items-center justify-center">
+                <span class="text-lg font-semibold text-nova-dark group-hover:text-nova-rose transition">{{ cat.name }}</span>
+              </div>
+            }
           </a>
         }
       </div>
@@ -69,7 +74,7 @@ import { CurrencyPipe } from '@angular/common';
           <a [routerLink]="['/producto', product.slug]" class="group cursor-pointer">
             <div class="bg-nova-pink rounded-lg overflow-hidden aspect-[3/4] mb-3 flex items-center justify-center">
               @if (getMainImage(product)) {
-                <img [src]="getMainImage(product)" [alt]="product.name" class="w-full h-full object-cover">
+                <img [src]="getMainImage(product)" [alt]="product.name" loading="lazy" class="w-full h-full object-cover">
               } @else {
                 <span class="text-nova-gray text-sm">Sin imagen</span>
               }

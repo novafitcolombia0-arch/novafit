@@ -16,6 +16,8 @@ import { AsyncPipe } from '@angular/common';
             <a routerLink="/catalogo" routerLinkActive="text-nova-sand"
                [routerLinkActiveOptions]="{exact: true}"
                class="text-sm uppercase tracking-widest hover:text-nova-sand transition">Tienda</a>
+            <a routerLink="/conocenos" routerLinkActive="text-nova-sand"
+               class="text-sm uppercase tracking-widest hover:text-nova-sand transition">Conócenos</a>
             @if (auth.user$ | async) {
               <a routerLink="/admin" class="text-sm uppercase tracking-widest hover:text-nova-sand transition">Admin</a>
             } @else {
@@ -32,6 +34,7 @@ import { AsyncPipe } from '@angular/common';
       @if (menuOpen) {
         <div class="md:hidden bg-nova-black px-4 pb-4">
           <a routerLink="/catalogo" class="block py-2 text-sm uppercase tracking-widest">Tienda</a>
+          <a routerLink="/conocenos" class="block py-2 text-sm uppercase tracking-widest">Conócenos</a>
           <a routerLink="/admin" class="block py-2 text-sm uppercase tracking-widest">Admin</a>
         </div>
       }

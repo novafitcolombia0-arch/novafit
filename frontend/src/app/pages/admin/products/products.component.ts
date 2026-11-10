@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { compressImage } from '../../../services/image-compress';
 import { Category, Product, ProductImage, ProductSize } from '../../../models/types';
 import { CurrencyPipe } from '@angular/common';
 
@@ -178,17 +179,15 @@ export class AdminProductsComponent implements OnInit {
 
   loadProducts() { this.api.getAllProducts().subscribe(prods => this.products = prods); }
 
-  onImagesSelected(event: Event) {
+  async onImagesSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files) return;
-    Array.from(input.files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const isMain = this.form.images.length === 0;
-        this.form.images.push({ imageData: reader.result as string, mimeType: file.type, isMain });
-      };
-      reader.readAsDataURL(file);
-    });
+    const images = await Promise.all(Array.from(input.files).map(file => compressImage(file, 1400)));
+    for (const imageData of images) {
+      const isMain = this.form.images.length === 0;
+      this.form.images.push({ imageData, mimeType: 'image/jpeg', isMain });
+    }
+    input.value = '';
   }
 
   removeImage(index: number) {

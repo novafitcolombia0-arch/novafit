@@ -15,6 +15,14 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/product-detail/product-detail.component').then(m => m.ProductDetailComponent),
   },
   {
+    path: 'conocenos',
+    loadComponent: () => import('./pages/about/about.component').then(m => m.AboutComponent),
+  },
+  {
+    path: 'garantias-y-cambios',
+    loadComponent: () => import('./pages/policies/policies.component').then(m => m.PoliciesComponent),
+  },
+  {
     path: 'admin/login',
     loadComponent: () => import('./pages/admin/login/admin-login.component').then(m => m.AdminLoginComponent),
   },

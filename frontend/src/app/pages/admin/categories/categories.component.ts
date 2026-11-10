@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { compressImage } from '../../../services/image-compress';
 import { Category } from '../../../models/types';
 
 @Component({
@@ -121,12 +122,10 @@ export class AdminCategoriesComponent implements OnInit {
   ngOnInit() { this.loadCategories(); }
   loadCategories() { this.api.getCategories().subscribe(cats => this.categories = cats); }
 
-  onImageSelected(event: Event) {
+  async onImageSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files || !input.files[0]) return;
-    const reader = new FileReader();
-    reader.onload = () => { this.form.image = reader.result as string; };
-    reader.readAsDataURL(input.files[0]);
+    this.form.image = await compressImage(input.files[0], 1000);
   }
 
   editCategory(cat: Category) { this.editingId = cat.id; this.form = { ...cat }; this.showForm = true; }

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { compressImage } from '../../../services/image-compress';
 
 @Component({
   selector: 'app-admin-settings',
@@ -23,6 +24,14 @@ import { ApiService } from '../../../services/api.service';
 
         <input type="file" accept="image/*" multiple (change)="onImagesSelected($event)"
                class="block w-full text-sm text-nova-gray file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-nova-pink file:text-nova-dark hover:file:bg-nova-blush">
+
+        @if (heroImages.length > 0) {
+          <button (click)="optimizeExisting()" [disabled]="optimizing"
+                  class="mt-3 text-sm text-nova-dark underline hover:text-nova-rose disabled:opacity-50">
+            {{ optimizing ? 'Optimizando...' : 'Optimizar imágenes actuales (más rápidas de cargar)' }}
+          </button>
+          <p class="text-xs text-nova-gray mt-1">Después de optimizar, pulsa "Guardar Configuración".</p>
+        }
 
         @if (heroImages.length > 0) {
           <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -56,6 +65,7 @@ import { ApiService } from '../../../services/api.service';
 export class AdminSettingsComponent implements OnInit {
   heroImages: string[] = [];
   saving = false;
+  optimizing = false;
   saved = false;
   error = '';
 
@@ -69,16 +79,24 @@ export class AdminSettingsComponent implements OnInit {
     });
   }
 
-  onImagesSelected(event: Event) {
+  async onImagesSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files) return;
-    Array.from(input.files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        this.heroImages.push(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    });
+    const images = await Promise.all(Array.from(input.files).map(file => compressImage(file, 1920)));
+    this.heroImages.push(...images);
+    input.value = '';
+  }
+
+  async optimizeExisting() {
+    this.optimizing = true;
+    this.saved = false;
+    this.error = '';
+    try {
+      this.heroImages = await Promise.all(this.heroImages.map(img => compressImage(img, 1920)));
+    } catch {
+      this.error = 'No se pudieron optimizar las imágenes';
+    }
+    this.optimizing = false;
   }
 
   removeImage(index: number) {

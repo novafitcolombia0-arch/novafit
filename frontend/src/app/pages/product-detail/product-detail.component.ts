@@ -136,18 +136,18 @@ import { CurrencyPipe } from '@angular/common';
                     <ul class="mt-3 space-y-2 text-nova-gray">
                       <li class="flex items-start gap-2">
                         <span class="text-nova-dark font-semibold mt-0.5">Cali:</span>
-                        <span>La entrega se hará de <strong class="text-nova-dark">1 a 2 días hábiles</strong>*</span>
+                        <span>Tiempo estimado de entrega de <strong class="text-nova-dark">1 a 2 días hábiles</strong>.</span>
                       </li>
                       <li class="flex items-start gap-2">
                         <span class="text-nova-dark font-semibold mt-0.5">Ciudades principales:</span>
-                        <span>La entrega se hará de <strong class="text-nova-dark">3 a 6 días hábiles</strong>*</span>
+                        <span>Tiempo estimado de <strong class="text-nova-dark">3 a 6 días hábiles</strong>.</span>
                       </li>
                       <li class="flex items-start gap-2">
                         <span class="text-nova-dark font-semibold mt-0.5">Otras ciudades:</span>
-                        <span>La entrega se hará de <strong class="text-nova-dark">3 a 8 días hábiles</strong>*</span>
+                        <span>Tiempo estimado de <strong class="text-nova-dark">3 a 8 días hábiles</strong>.</span>
                       </li>
                     </ul>
-                    <p class="text-nova-gray text-xs mt-3 italic">*Días hábiles se consideran de lunes a viernes. Las órdenes recibidas después de las 5:00 pm serán consideradas como órdenes del día siguiente.</p>
+                    <p class="text-nova-gray text-xs mt-3"><strong class="text-nova-dark">Importante:</strong> Los tiempos de entrega son estimados y pueden variar según la transportadora, la ciudad de destino y las condiciones logísticas. NOVA FIT no controla los tiempos de distribución de las empresas transportadoras.</p>
                   </div>
                 }
               </div>
@@ -163,12 +163,11 @@ import { CurrencyPipe } from '@angular/common';
                 </button>
                 @if (openSection === 'warranty') {
                   <div class="px-4 pb-3 text-sm leading-relaxed border-t border-nova-blush">
-                    <h4 class="mt-3 font-medium text-nova-dark mb-1">Cambio voluntario</h4>
-                    <p class="text-nova-gray mb-2">Para realizar cambio voluntario, debe ser en un plazo máximo de <strong class="text-nova-dark">15 días</strong> tras recibir la orden. Los artículos que vas a cambiar deben estar en perfectas condiciones, con las etiquetas aún puestas y en su empaque original. Los costos de envío deben ser asumidos por el cliente.</p>
-                    <p class="text-nova-gray mb-2">Por razones de higiene (Artículo 11, ley 1480 del 2011) no aceptamos cambios de ropa interior, incluyendo vestidos de baño, bodys y pantalones deportivos primera piel de la marca, excepto cuando se presenten defectos de fabricación que serán evaluados por nuestro departamento de calidad.</p>
-                    <p class="text-nova-gray mb-3">Las prendas de colecciones anteriores o precio especial, serán cambiadas sólo por prendas de las mismas colecciones (sujeto a disponibilidad del producto en el sitio web). Y se recibirán por el valor actual de la prenda. No tendrán cambio por prendas de última y/o nueva colección.</p>
-                    <h4 class="font-medium text-nova-dark mb-1">Garantía</h4>
-                    <p class="text-nova-gray">Las prendas gozan de un período de <strong class="text-nova-dark">30 días de garantía</strong> sobre desperfectos de fábrica. (30 días a partir de la fecha de compra). Los defectos debidos a una incorrecta utilización, manipulación del material o desgastes producidos por un uso normal del mismo, tales como: (daños en costuras, rotos, mal lavado, mal secado), no serán reconocidos como garantía.</p>
+                    <h4 class="mt-3 font-medium text-nova-dark mb-1">Garantía</h4>
+                    <p class="text-nova-gray mb-2">Nuestras prendas cuentan con garantía por defectos de fabricación, como fallas en costuras, telas o confección. Para solicitar una revisión, comunícate con nuestro equipo y envía evidencia fotográfica del defecto.</p>
+                    <h4 class="font-medium text-nova-dark mb-1">Cambios de talla o referencia</h4>
+                    <p class="text-nova-gray mb-3">Debes solicitarlo dentro de los <strong class="text-nova-dark">8 días calendario</strong> siguientes a la recepción del pedido. Las prendas deben estar sin uso, sin lavar y con sus etiquetas originales. No realizamos cambios en prendas en promoción o con descuento.</p>
+                    <a routerLink="/garantias-y-cambios" class="text-nova-dark underline hover:text-nova-rose">Ver política completa de garantías y cambios</a>
                   </div>
                 }
               </div>
@@ -184,7 +183,7 @@ export class ProductDetailComponent implements OnInit {
   mainImage: string | null = null;
   selectedSize = '';
   openSection = 'desc';
-  private whatsappNumber = '573001234567';
+  private whatsappNumber = '573187016549';
 
   constructor(private api: ApiService, private route: ActivatedRoute) {}
 
