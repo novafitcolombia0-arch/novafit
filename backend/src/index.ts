@@ -7,11 +7,13 @@ import authRoutes from "./routes/auth.routes";
 import categoryRoutes from "./routes/category.routes";
 import productRoutes from "./routes/product.routes";
 import settingsRoutes from "./routes/settings.routes";
+import imageRoutes from "./routes/image.routes";
 import { errorHandler } from "./middleware/errors";
 
 dotenv.config();
 
 const app = express();
+app.set("trust proxy", true); // Railway termina HTTPS en su proxy; así req.protocol es https
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -22,6 +24,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/images", imageRoutes);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });

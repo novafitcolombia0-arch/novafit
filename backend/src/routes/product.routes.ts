@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { createRouter } from "../middleware/errors";
 import { AppDataSource } from "../config/data-source";
-import { Product } from "../entities";
+import { Product, ProductImage } from "../entities";
+import { isDataUrl, withImageUrls } from "./image.routes";
 import { authMiddleware } from "../middleware/auth";
 
 const router = createRouter();
@@ -27,15 +28,15 @@ router.get("/", async (req: Request, res: Response) => {
 
   qb.orderBy("product.id", "DESC");
   const products = await qb.getMany();
-  res.json(products);
+  res.json(products.map((p) => withImageUrls(req, p)));
 });
 
-router.get("/all", authMiddleware, async (_req: Request, res: Response) => {
+router.get("/all", authMiddleware, async (req: Request, res: Response) => {
   const products = await productRepo().find({
     relations: ["category", "images", "sizes"],
     order: { id: "DESC" },
   });
-  res.json(products);
+  res.json(products.map((p) => withImageUrls(req, p)));
 });
 
 router.get("/:slug", async (req: Request, res: Response) => {
@@ -45,7 +46,7 @@ router.get("/:slug", async (req: Request, res: Response) => {
   });
   if (!product)
     return res.status(404).json({ message: "Producto no encontrado" });
-  res.json(product);
+  res.json(withImageUrls(req, product));
 });
 
 router.post("/", authMiddleware, async (req: Request, res: Response) => {
@@ -68,11 +69,11 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
     price,
     categoryId,
     isActive: isActive ?? true,
-    images: images || [],
+    images: (images || []).filter((img: any) => isDataUrl(img.imageData)),
     sizes: sizes || [],
   });
   await productRepo().save(product);
-  res.status(201).json(product);
+  res.status(201).json(withImageUrls(req, product));
 });
 
 router.put("/:id", authMiddleware, async (req: Request, res: Response) => {
@@ -87,13 +88,22 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response) => {
   Object.assign(product, rest);
 
   if (images) {
-    await AppDataSource.getRepository("ProductImage").delete({ productId: product.id });
-    product.images = images.map((img: any) =>
-      AppDataSource.getRepository("ProductImage").create({
-        ...img,
-        productId: product.id,
+    // El panel reenvía las imágenes existentes solo con su URL: se recuperan sus datos
+    const imageRepo = AppDataSource.getRepository(ProductImage);
+    const stored = await imageRepo
+      .createQueryBuilder("image")
+      .addSelect("image.imageData")
+      .where("image.productId = :id", { id: product.id })
+      .getMany();
+    const kept = images
+      .map((img: any) => {
+        if (isDataUrl(img.imageData)) return { imageData: img.imageData, mimeType: img.mimeType, isMain: !!img.isMain };
+        const old = stored.find((s) => s.id === img.id);
+        return old && { imageData: old.imageData, mimeType: old.mimeType, isMain: !!img.isMain };
       })
-    );
+      .filter(Boolean);
+    await imageRepo.delete({ productId: product.id });
+    product.images = kept.map((img: any) => imageRepo.create({ ...img, productId: product.id }));
   }
 
   if (sizes) {
@@ -107,7 +117,7 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response) => {
   }
 
   await productRepo().save(product);
-  res.json(product);
+  res.json(withImageUrls(req, product));
 });
 
 router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {

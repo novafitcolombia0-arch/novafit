@@ -12,7 +12,8 @@ export class ProductImage {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: "text" })
+  // select: false → los listados no cargan los datos; se sirven en /api/images
+  @Column({ type: "text", select: false })
   imageData: string;
 
   @Column({ default: "image/jpeg" })
