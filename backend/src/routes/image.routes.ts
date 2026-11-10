@@ -26,8 +26,9 @@ export const heroImageUrl = (req: Request, index: number, data: string) =>
   `${baseUrl(req)}/hero/${index}?v=${version(data)}`;
 
 // Sustituye los datos de imagen por URLs antes de responder
-export function withImageUrls<T extends { images?: { id: number; imageData?: string }[] }>(req: Request, product: T): T {
+export function withImageUrls<T extends { images?: { id: number; imageData?: string }[]; category?: Category }>(req: Request, product: T): T {
   product.images?.forEach((img) => (img.imageData = productImageUrl(req, img.id)));
+  withCategoryImageUrl(req, product.category); // la categoría viene incluida en cada producto
   return product;
 }
 
