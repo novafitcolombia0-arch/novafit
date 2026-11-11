@@ -68,7 +68,7 @@ import { CurrencyPipe } from '@angular/common';
     </section>
 
     <section class="max-w-7xl mx-auto px-4 py-16">
-      <h2 class="font-display text-3xl font-bold text-center mb-4 text-nova-dark">Nuevos Lanzamientos</h2>
+      <h2 class="font-display text-3xl font-bold text-center mb-4 text-nova-dark uppercase">Nuevos Lanzamientos</h2>
       <p class="text-center text-nova-gray mb-12">Lo más reciente de nuestra colección</p>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
         @for (product of products; track product.id) {

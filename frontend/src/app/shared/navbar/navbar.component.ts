@@ -1,12 +1,10 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
-import { AsyncPipe } from '@angular/common';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, AsyncPipe],
+  imports: [RouterLink, RouterLinkActive],
   template: `
     <nav class="bg-nova-dark text-white sticky top-0 z-50">
       <div class="max-w-7xl mx-auto px-4">
@@ -20,11 +18,6 @@ import { AsyncPipe } from '@angular/common';
                class="text-sm uppercase tracking-widest hover:text-nova-sand transition">Tienda</a>
             <a routerLink="/conocenos" routerLinkActive="text-nova-sand"
                class="text-sm uppercase tracking-widest hover:text-nova-sand transition">Conócenos</a>
-            @if (auth.user$ | async) {
-              <a routerLink="/admin" class="text-sm uppercase tracking-widest hover:text-nova-sand transition">Admin</a>
-            } @else {
-              <a routerLink="/admin/login" class="text-sm uppercase tracking-widest hover:text-nova-sand transition">Admin</a>
-            }
           </div>
           <button (click)="toggleMenu()" class="md:hidden text-white">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,7 +30,6 @@ import { AsyncPipe } from '@angular/common';
         <div class="md:hidden bg-nova-black px-4 pb-4">
           <a routerLink="/catalogo" class="block py-2 text-sm uppercase tracking-widest">Tienda</a>
           <a routerLink="/conocenos" class="block py-2 text-sm uppercase tracking-widest">Conócenos</a>
-          <a routerLink="/admin" class="block py-2 text-sm uppercase tracking-widest">Admin</a>
         </div>
       }
     </nav>
@@ -45,6 +37,5 @@ import { AsyncPipe } from '@angular/common';
 })
 export class NavbarComponent {
   menuOpen = false;
-  constructor(public auth: AuthService) {}
   toggleMenu() { this.menuOpen = !this.menuOpen; }
 }
