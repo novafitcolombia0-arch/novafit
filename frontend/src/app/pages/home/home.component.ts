@@ -41,7 +41,9 @@ import { CurrencyPipe } from '@angular/common';
       }
 
       <div class="relative max-w-7xl mx-auto px-4 h-full flex flex-col items-center justify-center text-center">
-        <h1 class="font-display text-5xl md:text-7xl font-bold mb-4 tracking-wide">NOVA</h1>
+        <h1 class="mb-4">
+          <img src="assets/logo-white.png" alt="Nova FIT" class="h-28 md:h-40 w-auto mx-auto drop-shadow-lg">
+        </h1>
         <p class="text-lg md:text-xl text-nova-blush mb-8 tracking-widest uppercase">Muestra tu mejor versión</p>
         <a routerLink="/catalogo" class="inline-block bg-nova-dark text-white px-8 py-3 text-sm uppercase tracking-widest hover:bg-opacity-90 transition">Shop Now</a>
       </div>

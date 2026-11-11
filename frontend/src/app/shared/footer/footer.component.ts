@@ -10,7 +10,7 @@ import { RouterLink } from '@angular/router';
       <div class="max-w-7xl mx-auto px-4 py-12">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 class="font-display text-2xl font-bold tracking-wider mb-4">NOVA</h3>
+            <img src="assets/logo-white.png" alt="Nova FIT" class="h-14 w-auto mb-4">
             <p class="text-nova-blush text-sm">Muestra tu mejor versión.</p>
           </div>
           <div>

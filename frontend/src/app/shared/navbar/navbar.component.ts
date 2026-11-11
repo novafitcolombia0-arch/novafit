@@ -11,7 +11,9 @@ import { AsyncPipe } from '@angular/common';
     <nav class="bg-nova-dark text-white sticky top-0 z-50">
       <div class="max-w-7xl mx-auto px-4">
         <div class="flex items-center justify-between h-16">
-          <a routerLink="/" class="font-display text-2xl font-bold tracking-wider">NOVA</a>
+          <a routerLink="/" class="flex items-center">
+            <img src="assets/logo-white.png" alt="Nova FIT" class="h-11 w-auto">
+          </a>
           <div class="hidden md:flex items-center space-x-8">
             <a routerLink="/catalogo" routerLinkActive="text-nova-sand"
                [routerLinkActiveOptions]="{exact: true}"
