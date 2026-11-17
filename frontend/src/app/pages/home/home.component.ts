@@ -3,12 +3,14 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { Category, Product } from '../../models/types';
 import { CurrencyPipe } from '@angular/common';
+import { WelcomeModalComponent } from '../../shared/welcome-modal/welcome-modal.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [RouterLink, CurrencyPipe],
+  imports: [RouterLink, CurrencyPipe, WelcomeModalComponent],
   template: `
+    <app-welcome-modal></app-welcome-modal>
     <section class="relative text-white overflow-hidden h-[500px] md:h-[600px]">
       @if (heroImages.length > 0) {
         <img [src]="heroImages[currentSlide]" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700">

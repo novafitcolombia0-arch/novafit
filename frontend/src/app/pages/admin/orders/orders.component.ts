@@ -136,7 +136,10 @@ type SortKey = 'createdAt' | 'total';
                           <p class="text-nova-gray">{{ item.quantity }} × {{ item.productName }} — talla {{ item.size }}
                             <span class="text-nova-dark">({{ item.unitPrice * item.quantity | currency:'COP':'$':'1.0-0' }})</span></p>
                         }
-                        <p class="text-nova-gray mt-2">Envío: {{ o.shippingCost | currency:'COP':'$':'1.0-0' }}</p>
+                        @if (o.discountAmount) {
+                          <p class="text-green-700 mt-2">Descuento {{ o.discountCode }}: −{{ o.discountAmount | currency:'COP':'$':'1.0-0' }}</p>
+                        }
+                        <p class="text-nova-gray" [class.mt-2]="!o.discountAmount">Envío: {{ o.shippingCost | currency:'COP':'$':'1.0-0' }}</p>
                         @if (o.paidAt) { <p class="text-nova-gray">Pagado el {{ o.paidAt | date:'dd/MM/yyyy HH:mm' }}</p> }
                         @if (o.wompiTransactionId) { <p class="text-nova-gray text-xs mt-1">Transacción Wompi: {{ o.wompiTransactionId }}</p> }
                       </div>

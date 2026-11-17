@@ -8,6 +8,8 @@ import { Order } from "./Order";
 import { OrderItem } from "./OrderItem";
 import { InventoryMovement } from "./InventoryMovement";
 import { Expense, EXPENSE_CATEGORIES } from "./Expense";
+import { DiscountCode } from "./DiscountCode";
+import { Subscriber } from "./Subscriber";
 export type { MovementType } from "./InventoryMovement";
 
-export { Category, Product, ProductImage, ProductSize, User, SiteSetting, Order, OrderItem, InventoryMovement, Expense, EXPENSE_CATEGORIES };
+export { Category, Product, ProductImage, ProductSize, User, SiteSetting, Order, OrderItem, InventoryMovement, Expense, EXPENSE_CATEGORIES, DiscountCode, Subscriber };

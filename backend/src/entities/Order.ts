@@ -75,6 +75,13 @@ export class Order {
   @Column({ type: "int", default: 0 })
   shippingCost: number;
 
+  // Código de descuento aplicado y cuánto se descontó de las prendas
+  @Column({ nullable: true })
+  discountCode: string;
+
+  @Column({ type: "int", default: 0 })
+  discountAmount: number;
+
   @Column({ type: "int" })
   total: number;
 

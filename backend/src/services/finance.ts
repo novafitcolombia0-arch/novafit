@@ -78,6 +78,9 @@ export async function feeConfig() {
 const SOLD = `o.status = 'APPROVED' AND o."fulfillmentStatus" <> 'CANCELADO'`;
 // Costo unitario: el guardado al vender; si es una venta vieja sin costo, el costo actual del producto
 const UNIT_COST = `COALESCE(i."unitCost", ROUND(p.cost))`;
+// Venta neta de una línea: precio × cantidad menos su parte del descuento del pedido
+// (el descuento es un % sobre las prendas, así que se reparte en proporción a cada línea)
+const LINE_REVENUE = `(i."unitPrice" * i.quantity * COALESCE(1 - o."discountAmount"::numeric / NULLIF(o.subtotal, 0), 1))`;
 // Líneas vendidas en el periodo
 const LINES_FROM = `FROM order_items i
        JOIN orders o ON o.id = i."orderId"
@@ -131,7 +134,7 @@ export async function computeKpis(range: Range): Promise<Kpis> {
   const f = filterSql(range);
 
   const [lines] = await AppDataSource.query(
-    `SELECT COALESCE(SUM(i."unitPrice" * i.quantity), 0) AS revenue,
+    `SELECT COALESCE(SUM(${LINE_REVENUE}), 0) AS revenue,
             COALESCE(SUM(${UNIT_COST} * i.quantity), 0) AS cogs,
             COALESCE(SUM(i.quantity), 0) AS units,
             COALESCE(SUM(CASE WHEN ${UNIT_COST} IS NULL THEN i.quantity ELSE 0 END), 0) AS "unitsWithoutCost"
@@ -199,7 +202,7 @@ export async function computeSeries(range: Range): Promise<{ groupBy: "day" | "m
 
   const lines: any[] = await AppDataSource.query(
     `SELECT ${period} AS period,
-            SUM(i."unitPrice" * i.quantity) AS revenue,
+            SUM(${LINE_REVENUE}) AS revenue,
             SUM(COALESCE(${UNIT_COST}, 0) * i.quantity) AS cogs,
             SUM(i.quantity) AS units
        ${LINES_FROM}${f.sql}
@@ -265,8 +268,8 @@ export async function computeBreakdowns(range: Range) {
        LEFT JOIN category c ON c.id = p."categoryId"
       WHERE ${SOLD} AND o."paidAt" >= $1 AND o."paidAt" < $2${f.sql}`;
   const metrics = `SUM(i.quantity) AS units,
-            SUM(i."unitPrice" * i.quantity) AS revenue,
-            SUM(i."unitPrice" * i.quantity) - SUM(COALESCE(${UNIT_COST}, 0) * i.quantity) AS profit,
+            SUM(${LINE_REVENUE}) AS revenue,
+            SUM(${LINE_REVENUE}) - SUM(COALESCE(${UNIT_COST}, 0) * i.quantity) AS profit,
             BOOL_OR(${UNIT_COST} IS NULL) AS "missingCost"`;
   const rows = async (sql: string) =>
     ((await AppDataSource.query(sql, [from, to, ...f.params])) as any[]).map((r) => ({
@@ -398,15 +401,18 @@ export async function listSales(range: Range) {
 
   return orders
     .map((o) => {
+      // Parte que se cobró de cada peso de prenda tras el descuento del pedido
+      const netRate = o.subtotal > 0 ? 1 - (o.discountAmount || 0) / o.subtotal : 1;
       const items = o.items
         .filter((i) => matches(i.productId))
         .map((i) => {
           const unitCost = i.unitCost ?? info.get(i.productId)?.cost ?? null;
-          return { ...i, unitCost, profit: unitCost === null ? null : (i.unitPrice - unitCost) * i.quantity };
+          const net = Math.round(i.unitPrice * i.quantity * netRate);
+          return { ...i, unitCost, profit: unitCost === null ? null : net - unitCost * i.quantity };
         });
       const missingCost = items.some((i) => i.unitCost === null);
       const cogs = items.reduce((s, i) => s + (i.unitCost ?? 0) * i.quantity, 0);
-      const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+      const subtotal = Math.round(items.reduce((s, i) => s + i.unitPrice * i.quantity, 0) * netRate);
       return { ...o, items, cogs, grossProfit: subtotal - cogs, missingCost };
     })
     .filter((o) => o.items.length > 0);

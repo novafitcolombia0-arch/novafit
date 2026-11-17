@@ -50,6 +50,9 @@ import { OrderSummary } from '../../models/types';
               <span>{{ item.unitPrice * item.quantity | currency:'COP':'$':'1.0-0' }}</span>
             </div>
           }
+          @if (order.discountAmount) {
+            <div class="flex justify-between text-green-700 mt-2"><span>Descuento ({{ order.discountCode }})</span><span>−{{ order.discountAmount | currency:'COP':'$':'1.0-0' }}</span></div>
+          }
           <div class="flex justify-between text-nova-gray mt-2"><span>Envío</span><span>{{ order.shippingCost | currency:'COP':'$':'1.0-0' }}</span></div>
           <div class="flex justify-between font-semibold text-nova-dark border-t border-nova-blush pt-2 mt-2">
             <span>Total</span><span>{{ order.total | currency:'COP':'$':'1.0-0' }} COP</span>

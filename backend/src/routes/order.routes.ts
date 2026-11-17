@@ -11,6 +11,7 @@ import {
   OutOfStockError,
   reserveStock,
 } from "../services/orders";
+import { evaluateDiscount } from "../services/discounts";
 
 const router = createRouter();
 const orderRepo = () => AppDataSource.getRepository(Order);
@@ -48,6 +49,8 @@ const publicView = (order: Order) => ({
   status: order.status,
   customerName: order.customerName.split(" ")[0],
   subtotal: order.subtotal,
+  discountCode: order.discountCode,
+  discountAmount: order.discountAmount,
   shippingCost: order.shippingCost,
   total: order.total,
   paymentMethod: order.paymentMethod,
@@ -144,8 +147,19 @@ router.post("/checkout", async (req: Request, res: Response) => {
   }
 
   const subtotal = orderItems.reduce((sum, i) => sum + i.unitPrice! * i.quantity!, 0);
-  const shippingCost = await shippingFor(subtotal);
-  const total = subtotal + shippingCost;
+
+  // Descuento: se recalcula aquí, nunca se confía en el navegador
+  let discountCode: string | undefined;
+  let discountAmount = 0;
+  if (req.body?.discountCode) {
+    const discount = await evaluateDiscount(req.body.discountCode, c.email, subtotal);
+    if (!discount.ok) return res.status(400).json({ message: discount.message });
+    discountCode = discount.discount.code;
+    discountAmount = discount.amount;
+  }
+
+  const shippingCost = await shippingFor(subtotal - discountAmount);
+  const total = subtotal - discountAmount + shippingCost;
 
   await expireStaleOrders().catch((e) => console.error("expireStaleOrders", e?.message));
 
@@ -161,6 +175,8 @@ router.post("/checkout", async (req: Request, res: Response) => {
         reference,
         status: "PENDING",
         subtotal,
+        discountCode,
+        discountAmount,
         shippingCost,
         total,
         stockReserved: true,

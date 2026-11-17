@@ -4,6 +4,7 @@ import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CartService } from '../../services/cart.service';
 import { ApiService } from '../../services/api.service';
+import { WELCOME_CODE_KEY } from '../../shared/welcome-modal/welcome-modal.component';
 
 const DEPARTMENTS = [
   'Amazonas', 'Antioquia', 'Arauca', 'Atlántico', 'Bogotá D.C.', 'Bolívar', 'Boyacá', 'Caldas',
@@ -75,12 +76,39 @@ const DEPARTMENTS = [
               <span class="shrink-0">{{ item.price * item.quantity | currency:'COP':'$':'1.0-0' }}</span>
             </div>
           }
-          <div class="flex justify-between text-sm text-nova-gray border-t border-nova-blush pt-3 mt-3 mb-2">
+          <!-- Código de descuento -->
+          <div class="border-t border-nova-blush pt-3 mt-3 mb-3">
+            @if (applied()) {
+              <div class="flex items-center justify-between gap-2 text-sm bg-nova-pink rounded px-3 py-2">
+                <span class="text-nova-dark">Código <strong class="font-mono">{{ applied()!.code }}</strong> · {{ applied()!.percent }}%</span>
+                <button type="button" (click)="removeDiscount()" class="text-xs text-nova-gray underline">Quitar</button>
+              </div>
+            } @else {
+              <div class="flex gap-2">
+                <input [(ngModel)]="discountInput" name="discountCode" placeholder="Código de descuento" autocomplete="off"
+                       (keydown.enter)="$event.preventDefault(); applyDiscount()" class="input uppercase">
+                <button type="button" (click)="applyDiscount()" [disabled]="!discountInput.trim() || discountLoading"
+                        class="shrink-0 px-4 rounded border border-nova-dark text-nova-dark text-sm hover:bg-nova-dark hover:text-white transition disabled:opacity-40">
+                  {{ discountLoading ? '…' : 'Aplicar' }}
+                </button>
+              </div>
+            }
+            @if (discountError) { <p class="text-xs text-red-600 mt-1">{{ discountError }}</p> }
+          </div>
+          <div class="flex justify-between text-sm text-nova-gray mb-1">
+            <span>Subtotal</span><span>{{ cart.subtotal() | currency:'COP':'$':'1.0-0' }}</span>
+          </div>
+          @if (discount() > 0) {
+            <div class="flex justify-between text-sm text-green-700 mb-1">
+              <span>Descuento ({{ applied()!.percent }}%)</span><span>−{{ discount() | currency:'COP':'$':'1.0-0' }}</span>
+            </div>
+          }
+          <div class="flex justify-between text-sm text-nova-gray mb-2">
             <span>Envío</span>
             <span>{{ shipping() === 0 ? 'Gratis' : (shipping() | currency:'COP':'$':'1.0-0') }}</span>
           </div>
-          <div class="flex justify-between font-semibold text-nova-dark mb-5">
-            <span>Total</span><span>{{ cart.subtotal() + shipping() | currency:'COP':'$':'1.0-0' }} COP</span>
+          <div class="flex justify-between font-semibold text-nova-dark mb-5 border-t border-nova-blush pt-2">
+            <span>Total</span><span>{{ total() | currency:'COP':'$':'1.0-0' }} COP</span>
           </div>
 
           <label class="flex items-start gap-2 text-xs text-nova-gray mb-4">
@@ -113,9 +141,21 @@ export class CheckoutComponent implements OnInit {
 
   private shippingCost = signal(0);
   private freeFrom = signal(0);
-  shipping = computed(() =>
-    this.freeFrom() > 0 && this.cart.subtotal() >= this.freeFrom() ? 0 : this.shippingCost()
-  );
+
+  discountInput = '';
+  discountError = '';
+  discountLoading = false;
+  applied = signal<{ code: string; percent: number } | null>(null);
+  // Mismo cálculo que el backend (que es quien decide el valor final)
+  discount = computed(() => {
+    const a = this.applied();
+    return a ? Math.round((this.cart.subtotal() * a.percent) / 100) : 0;
+  });
+  shipping = computed(() => {
+    const productsAfterDiscount = this.cart.subtotal() - this.discount();
+    return this.freeFrom() > 0 && productsAfterDiscount >= this.freeFrom() ? 0 : this.shippingCost();
+  });
+  total = computed(() => this.cart.subtotal() - this.discount() + this.shipping());
 
   constructor(public cart: CartService, private api: ApiService, private router: Router) {}
 
@@ -124,10 +164,32 @@ export class CheckoutComponent implements OnInit {
       this.router.navigate(['/carrito']);
       return;
     }
+    // Código guardado por el modal de bienvenida
+    try { this.discountInput = localStorage.getItem(WELCOME_CODE_KEY) || ''; } catch {}
     this.api.getSettings().subscribe(s => {
       this.shippingCost.set(parseInt(s['shippingCost'] || '0', 10) || 0);
       this.freeFrom.set(parseInt(s['freeShippingFrom'] || '0', 10) || 0);
     });
+  }
+
+  applyDiscount() {
+    const code = this.discountInput.trim().toUpperCase();
+    if (!code) return;
+    this.discountLoading = true;
+    this.discountError = '';
+    this.api.validateDiscount(code, this.form.email.trim(), this.cart.subtotal()).subscribe({
+      next: res => { this.applied.set({ code: res.code, percent: res.percent }); this.discountLoading = false; },
+      error: err => {
+        this.discountError = err?.error?.message || 'No se pudo validar el código';
+        this.discountLoading = false;
+      },
+    });
+  }
+
+  removeDiscount() {
+    this.discountInput = this.applied()?.code || '';
+    this.applied.set(null);
+    this.discountError = '';
   }
 
   pay() {
@@ -135,7 +197,7 @@ export class CheckoutComponent implements OnInit {
     this.error = '';
     const { accept, ...customer } = this.form;
     const items = this.cart.items().map(i => ({ productId: i.productId, size: i.size, quantity: i.quantity }));
-    this.api.checkout({ items, customer }).subscribe({
+    this.api.checkout({ items, customer, discountCode: this.applied()?.code }).subscribe({
       next: res => { window.location.href = res.checkoutUrl; },
       error: err => {
         this.error = err?.error?.message || 'No se pudo iniciar el pago. Intenta de nuevo.';

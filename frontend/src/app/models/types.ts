@@ -69,11 +69,41 @@ export interface OrderSummary {
   status: PaymentStatus;
   customerName: string;
   subtotal: number;
+  discountCode?: string;
+  discountAmount?: number;
   shippingCost: number;
   total: number;
   paymentMethod?: string;
   createdAt: string;
   items: OrderItem[];
+}
+
+export interface DiscountCode {
+  id: number;
+  code: string;
+  percent: number;
+  active: boolean;
+  firstPurchaseOnly: boolean;
+  maxUses: number | null;
+  usedCount: number;
+  expiresAt: string | null;
+  isWelcome: boolean;
+  description?: string;
+  createdAt: string;
+}
+
+export interface Subscriber {
+  id: number;
+  email: string;
+  name?: string;
+  discountCode?: string;
+  createdAt: string;
+}
+
+export interface WelcomeOffer {
+  enabled: boolean;
+  percent?: number;
+  firstPurchaseOnly?: boolean;
 }
 
 /** Pedido completo (panel de administración) */
@@ -94,6 +124,7 @@ export interface Order extends OrderSummary {
 
 export interface CheckoutRequest {
   items: { productId: number; size: string; quantity: number }[];
+  discountCode?: string;
   customer: {
     name: string;
     email: string;

@@ -11,6 +11,8 @@ import imageRoutes from "./routes/image.routes";
 import orderRoutes from "./routes/order.routes";
 import inventoryRoutes from "./routes/inventory.routes";
 import financeRoutes from "./routes/finance.routes";
+import discountRoutes from "./routes/discount.routes";
+import subscriberRoutes from "./routes/subscriber.routes";
 import { errorHandler } from "./middleware/errors";
 import { wompiConfig } from "./services/wompi";
 
@@ -32,6 +34,8 @@ app.use("/api/images", imageRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/finance", financeRoutes);
+app.use("/api/discounts", discountRoutes);
+app.use("/api/subscribers", subscriberRoutes);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });

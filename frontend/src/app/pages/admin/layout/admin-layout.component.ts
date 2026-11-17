@@ -17,6 +17,8 @@ const ICONS: Record<string, string> = {
   settings: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-2-1.2L14.5 3h-4l-.4 2.6a7.6 7.6 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 2 1.2l.4 2.6h4l.4-2.6a7.6 7.6 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2Z',
   store: 'M4 9l1.5-5h13L20 9M4 9v11h16V9M4 9h16M9 20v-6h6v6',
   logout: 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10',
+  percent: 'M19 5 5 19M7.5 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm9 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z',
+  mail: 'M4 6h16v12H4zM4 7l8 6 8-6',
 };
 
 @Component({
@@ -114,6 +116,13 @@ export class AdminLayoutComponent implements OnInit {
         { path: '/admin/productos', label: 'Productos', icon: 'tag' },
         { path: '/admin/inventario', label: 'Inventario', icon: 'boxes' },
         { path: '/admin/categorias', label: 'Categorías', icon: 'grid' },
+      ],
+    },
+    {
+      title: 'Marketing',
+      items: [
+        { path: '/admin/descuentos', label: 'Descuentos', icon: 'percent' },
+        { path: '/admin/suscriptores', label: 'Suscriptores', icon: 'mail' },
       ],
     },
     { title: 'Ajustes', items: [{ path: '/admin/configuracion', label: 'Configuración', icon: 'settings' }] },

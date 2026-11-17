@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   Category, CheckoutRequest, CostRow, Expense, FinanceFilterOptions, FinanceRange, FinanceSummary, InventoryMovement, InventoryProduct,
-  MonthlyClose, Order, OrderSummary, Product, Sale, YearlyCloseRow,
+  MonthlyClose, Order, OrderSummary, Product, Sale, YearlyCloseRow, DiscountCode, Subscriber, WelcomeOffer,
 } from '../models/types';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
@@ -182,5 +182,43 @@ export class ApiService {
 
   updateOrder(id: number, data: Partial<Pick<Order, 'fulfillmentStatus' | 'trackingNumber'>>): Observable<Order> {
     return this.http.patch<Order>(`${this.apiUrl}/orders/${id}`, data, this.adminHeaders());
+  }
+
+  // ----- Descuentos y suscripción -----
+
+  validateDiscount(code: string, email: string, subtotal: number): Observable<{ code: string; percent: number; amount: number }> {
+    return this.http.post<{ code: string; percent: number; amount: number }>(`${this.apiUrl}/discounts/validate`, { code, email, subtotal });
+  }
+
+  getWelcomeOffer(): Observable<WelcomeOffer> {
+    return this.http.get<WelcomeOffer>(`${this.apiUrl}/discounts/welcome-offer`);
+  }
+
+  subscribe(email: string, name?: string): Observable<{ subscribed: boolean; code?: string; percent?: number; firstPurchaseOnly?: boolean }> {
+    return this.http.post<{ subscribed: boolean; code?: string; percent?: number; firstPurchaseOnly?: boolean }>(`${this.apiUrl}/subscribers`, { email, name });
+  }
+
+  getDiscounts(): Observable<DiscountCode[]> {
+    return this.http.get<DiscountCode[]>(`${this.apiUrl}/discounts`, this.adminHeaders());
+  }
+
+  createDiscount(data: Partial<DiscountCode> & { prefix?: string }): Observable<DiscountCode> {
+    return this.http.post<DiscountCode>(`${this.apiUrl}/discounts`, data, this.adminHeaders());
+  }
+
+  updateDiscount(id: number, data: Partial<DiscountCode>): Observable<DiscountCode> {
+    return this.http.put<DiscountCode>(`${this.apiUrl}/discounts/${id}`, data, this.adminHeaders());
+  }
+
+  deleteDiscount(id: number): Observable<{ message: string; deactivated?: boolean }> {
+    return this.http.delete<{ message: string; deactivated?: boolean }>(`${this.apiUrl}/discounts/${id}`, this.adminHeaders());
+  }
+
+  getSubscribers(): Observable<Subscriber[]> {
+    return this.http.get<Subscriber[]>(`${this.apiUrl}/subscribers`, this.adminHeaders());
+  }
+
+  deleteSubscriber(id: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/subscribers/${id}`, this.adminHeaders());
   }
 }

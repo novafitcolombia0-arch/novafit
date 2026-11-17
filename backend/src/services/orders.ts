@@ -4,6 +4,7 @@ import { AppDataSource } from "../config/data-source";
 import { Order, OrderItem } from "../entities";
 import { changeStock } from "./inventory";
 import { WompiTransaction } from "./wompi";
+import { markDiscountUsed } from "./discounts";
 
 // Minutos que se aparta el inventario mientras la clienta paga.
 // Si no paga en ese tiempo, el pedido pasa a EXPIRED y las prendas vuelven a la tienda.
@@ -104,6 +105,7 @@ export async function applyTransaction(tx: WompiTransaction): Promise<Order | nu
       case "APPROVED":
         if (order.status === "APPROVED") break;
         if (!order.stockReserved) await forceTakeStock(manager, order.items, order.reference);
+        await markDiscountUsed(manager, order.discountCode); // el código cuenta como usado solo al pagar
         order.status = "APPROVED";
         order.stockReserved = true;
         order.paidAt = new Date();
