@@ -23,12 +23,29 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/policies/policies.component').then(m => m.PoliciesComponent),
   },
   {
+    path: 'carrito',
+    loadComponent: () => import('./pages/cart/cart.component').then(m => m.CartComponent),
+  },
+  {
+    path: 'checkout',
+    loadComponent: () => import('./pages/checkout/checkout.component').then(m => m.CheckoutComponent),
+  },
+  {
+    path: 'pedido/:reference',
+    loadComponent: () => import('./pages/order-result/order-result.component').then(m => m.OrderResultComponent),
+  },
+  {
+    path: 'pago-simulado/:reference',
+    loadComponent: () => import('./pages/simulated-payment/simulated-payment.component').then(m => m.SimulatedPaymentComponent),
+  },
+  {
     path: 'admin/login',
     loadComponent: () => import('./pages/admin/login/admin-login.component').then(m => m.AdminLoginComponent),
   },
   {
     path: 'admin',
     canActivate: [authGuard],
+    loadComponent: () => import('./pages/admin/layout/admin-layout.component').then(m => m.AdminLayoutComponent),
     children: [
       {
         path: '',
@@ -41,6 +58,18 @@ export const routes: Routes = [
       {
         path: 'productos',
         loadComponent: () => import('./pages/admin/products/products.component').then(m => m.AdminProductsComponent),
+      },
+      {
+        path: 'finanzas',
+        loadComponent: () => import('./pages/admin/finance/finance.component').then(m => m.AdminFinanceComponent),
+      },
+      {
+        path: 'inventario',
+        loadComponent: () => import('./pages/admin/inventory/inventory.component').then(m => m.AdminInventoryComponent),
+      },
+      {
+        path: 'pedidos',
+        loadComponent: () => import('./pages/admin/orders/orders.component').then(m => m.AdminOrdersComponent),
       },
       {
         path: 'configuracion',

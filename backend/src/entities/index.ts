@@ -4,5 +4,10 @@ import { ProductImage } from "./ProductImage";
 import { ProductSize } from "./ProductSize";
 import { User } from "./User";
 import { SiteSetting } from "./SiteSetting";
+import { Order } from "./Order";
+import { OrderItem } from "./OrderItem";
+import { InventoryMovement } from "./InventoryMovement";
+import { Expense, EXPENSE_CATEGORIES } from "./Expense";
+export type { MovementType } from "./InventoryMovement";
 
-export { Category, Product, ProductImage, ProductSize, User, SiteSetting };
+export { Category, Product, ProductImage, ProductSize, User, SiteSetting, Order, OrderItem, InventoryMovement, Expense, EXPENSE_CATEGORIES };

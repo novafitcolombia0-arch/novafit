@@ -4,13 +4,14 @@ import { ApiService } from '../../../services/api.service';
 import { compressImage } from '../../../services/image-compress';
 import { Category, Product, ProductImage, ProductSize } from '../../../models/types';
 import { CurrencyPipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-admin-products',
   standalone: true,
-  imports: [FormsModule, CurrencyPipe],
+  imports: [FormsModule, CurrencyPipe, RouterLink],
   template: `
-    <div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="w-full">
       <div class="flex items-center justify-between mb-8">
         <h1 class="font-display text-3xl font-bold text-nova-dark">Productos</h1>
         <button (click)="showForm = !showForm"
@@ -38,6 +39,14 @@ import { CurrencyPipe } from '@angular/common';
                 <label class="block text-sm font-medium mb-1">Precio (COP)</label>
                 <input type="number" [(ngModel)]="form.price" name="price"
                        class="w-full border border-nova-blush rounded px-3 py-2 focus:outline-none focus:border-nova-rose" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Costo por unidad (COP)</label>
+                <input type="number" min="0" [(ngModel)]="form.cost" name="cost" placeholder="Lo que te cuesta producirla"
+                       class="w-full border border-nova-blush rounded px-3 py-2 focus:outline-none focus:border-nova-rose">
+                @if (form.cost && form.price) {
+                  <p class="text-xs text-nova-gray mt-1">Ganancia por prenda: {{ form.price - form.cost | currency:'COP':'$':'1.0-0' }} ({{ ((form.price - form.cost) / form.price * 100).toFixed(0) }}%)</p>
+                }
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1">Categoría</label>
@@ -84,12 +93,19 @@ import { CurrencyPipe } from '@angular/common';
 
             <div class="mt-6">
               <label class="block text-sm font-medium mb-2">Tallas y Stock</label>
+              @if (editingId) {
+                <p class="text-xs text-nova-gray mb-2">El stock de las tallas existentes se maneja en <a routerLink="/admin/inventario" class="underline">Inventario</a>. Aquí puedes agregar tallas nuevas con su stock inicial o quitar tallas.</p>
+              }
               <div class="flex flex-wrap gap-3 items-end">
                 @for (s of form.sizes; track s) {
                   <div class="flex items-center gap-1">
                     <span class="text-sm font-medium w-8 text-nova-dark">{{ s.size }}</span>
-                    <input type="number" [(ngModel)]="s.stock" [name]="'stock_' + $index" min="0"
-                           class="w-20 border border-nova-blush rounded px-2 py-1 text-sm focus:outline-none focus:border-nova-rose">
+                    @if (s.id) {
+                      <span class="w-20 px-2 py-1 text-sm text-nova-gray bg-nova-cream border border-nova-blush rounded">{{ s.stock }}</span>
+                    } @else {
+                      <input type="number" [(ngModel)]="s.stock" [name]="'stock_' + $index" min="0"
+                             class="w-20 border border-nova-blush rounded px-2 py-1 text-sm focus:outline-none focus:border-nova-rose">
+                    }
                     <button type="button" (click)="removeSize($index)" class="text-red-500 text-xs ml-1">x</button>
                   </div>
                 }
@@ -129,10 +145,29 @@ import { CurrencyPipe } from '@angular/common';
           <tbody>
             @for (prod of products; track prod.id) {
               <tr class="border-t border-nova-pink">
-                <td class="px-6 py-4 text-sm font-medium text-nova-dark">{{ prod.name }}</td>
+                <td class="px-6 py-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-11 h-14 shrink-0 rounded-md overflow-hidden bg-nova-pink">
+                      @if (mainImage(prod); as img) {
+                        <img [src]="img" [alt]="prod.name" loading="lazy" class="w-full h-full object-cover">
+                      } @else {
+                        <span class="w-full h-full flex items-center justify-center text-[10px] text-nova-gray">Sin foto</span>
+                      }
+                    </div>
+                    <span class="text-sm font-medium text-nova-dark">{{ prod.name }}</span>
+                  </div>
+                </td>
                 <td class="px-6 py-4 text-sm text-nova-gray">{{ prod.category?.name }}</td>
                 <td class="px-6 py-4 text-sm">{{ prod.price | currency:'COP':'$':'1.0-0' }} COP</td>
-                <td class="px-6 py-4 text-xs text-nova-gray">{{ getSizeLabels(prod.sizes) }}</td>
+                <td class="px-6 py-4">
+                  <div class="flex flex-wrap gap-1">
+                    @for (s of sortedSizes(prod.sizes); track s.size) {
+                      <span class="text-[11px] px-1.5 py-0.5 rounded border tabular-nums"
+                            [class.border-red-200]="s.stock <= 0" [class.bg-red-50]="s.stock <= 0" [class.text-red-700]="s.stock <= 0"
+                            [class.border-nova-blush]="s.stock > 0" [class.text-nova-gray]="s.stock > 0">{{ s.size }} · {{ s.stock }}</span>
+                    }
+                  </div>
+                </td>
                 <td class="px-6 py-4">
                   <span [class.bg-green-100]="prod.isActive" [class.text-green-700]="prod.isActive"
                         [class.bg-red-100]="!prod.isActive" [class.text-red-700]="!prod.isActive"
@@ -208,7 +243,22 @@ export class AdminProductsComponent implements OnInit {
     }
   }
 
-  removeSize(index: number) { this.form.sizes.splice(index, 1); }
+  removeSize(index: number) {
+    const s: ProductSize = this.form.sizes[index];
+    if (s.id && s.stock > 0 && !confirm(`La talla ${s.size} todavía tiene ${s.stock} unidades. ¿Quitarla del producto?`)) return;
+    this.form.sizes.splice(index, 1);
+  }
+
+  mainImage(prod: Product): string | null {
+    const img = prod.images?.find(i => i.isMain) || prod.images?.[0];
+    return img?.imageData || null;
+  }
+
+  sortedSizes(sizes: ProductSize[] = []): ProductSize[] {
+    const order = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+    const rank = (s: string) => (order.indexOf(s) + 1) || 99;
+    return [...sizes].sort((a, b) => rank(a.size) - rank(b.size));
+  }
 
   getSizeLabels(sizes: ProductSize[]): string {
     return sizes?.map(s => `${s.size}(${s.stock})`).join(', ') || '-';
@@ -218,7 +268,7 @@ export class AdminProductsComponent implements OnInit {
     this.editingId = prod.id;
     this.form = {
       name: prod.name, slug: prod.slug, description: prod.description,
-      price: prod.price, categoryId: prod.categoryId, isActive: prod.isActive,
+      price: prod.price, cost: prod.cost != null ? Number(prod.cost) : null, categoryId: prod.categoryId, isActive: prod.isActive,
       images: prod.images?.map(i => ({ ...i })) || [],
       sizes: prod.sizes?.map(s => ({ ...s })) || [],
     };

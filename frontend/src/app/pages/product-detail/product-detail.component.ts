@@ -3,6 +3,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { Product } from '../../models/types';
 import { CurrencyPipe } from '@angular/common';
+import { CartService } from '../../services/cart.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -53,6 +54,18 @@ import { CurrencyPipe } from '@angular/common';
               </div>
             </div>
 
+            <button (click)="addToCart()" [disabled]="!selectedSize"
+                    class="w-full bg-nova-dark text-white py-3 rounded-lg font-medium text-sm uppercase tracking-wider hover:bg-nova-black transition disabled:opacity-50 disabled:cursor-not-allowed mb-2">
+              Agregar a la bolsa
+            </button>
+
+            @if (added) {
+              <div class="flex items-center justify-between bg-nova-pink text-sm text-nova-dark rounded-lg px-4 py-3 mb-2">
+                <span>Agregado a tu bolsa</span>
+                <a routerLink="/carrito" class="font-medium underline">Ver bolsa y pagar</a>
+              </div>
+            }
+
             <button (click)="buyOnWhatsApp()" [disabled]="!selectedSize"
                     class="w-full bg-green-600 text-white py-3 rounded-lg font-medium text-sm uppercase tracking-wider hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -82,42 +95,6 @@ import { CurrencyPipe } from '@angular/common';
                     } @else {
                       <p class="mt-3">Descripción no disponible.</p>
                     }
-                  </div>
-                }
-              </div>
-
-              <!-- Guía de Tallas -->
-              <div class="border border-nova-blush rounded-lg mb-2">
-                <button (click)="toggle('sizes')"
-                        class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-nova-pink transition">
-                  <span class="font-medium text-sm text-nova-dark">Guía de Tallas</span>
-                  <svg [class.rotate-180]="openSection === 'sizes'" class="w-5 h-5 text-nova-gray transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                  </svg>
-                </button>
-                @if (openSection === 'sizes') {
-                  <div class="px-4 pb-3 border-t border-nova-blush">
-                    <div class="mt-3 overflow-x-auto">
-                      <table class="w-full text-sm">
-                        <thead>
-                          <tr class="text-nova-gray">
-                            <th class="text-left py-2 pr-4">Talla</th>
-                            <th class="text-left py-2 pr-4">Busto (cm)</th>
-                            <th class="text-left py-2 pr-4">Cintura (cm)</th>
-                            <th class="text-left py-2">Cadera (cm)</th>
-                          </tr>
-                        </thead>
-                        <tbody class="text-nova-dark">
-                          <tr class="border-t border-nova-pink"><td class="py-2 pr-4 font-medium">XS</td><td class="py-2 pr-4">80-84</td><td class="py-2 pr-4">60-64</td><td class="py-2">86-90</td></tr>
-                          <tr class="border-t border-nova-pink"><td class="py-2 pr-4 font-medium">S</td><td class="py-2 pr-4">84-88</td><td class="py-2 pr-4">64-68</td><td class="py-2">90-94</td></tr>
-                          <tr class="border-t border-nova-pink"><td class="py-2 pr-4 font-medium">M</td><td class="py-2 pr-4">88-92</td><td class="py-2 pr-4">68-72</td><td class="py-2">94-98</td></tr>
-                          <tr class="border-t border-nova-pink"><td class="py-2 pr-4 font-medium">L</td><td class="py-2 pr-4">92-96</td><td class="py-2 pr-4">72-76</td><td class="py-2">98-102</td></tr>
-                          <tr class="border-t border-nova-pink"><td class="py-2 pr-4 font-medium">XL</td><td class="py-2 pr-4">96-100</td><td class="py-2 pr-4">76-80</td><td class="py-2">102-106</td></tr>
-                          <tr class="border-t border-nova-pink"><td class="py-2 pr-4 font-medium">XXL</td><td class="py-2 pr-4">100-104</td><td class="py-2 pr-4">80-84</td><td class="py-2">106-110</td></tr>
-                        </tbody>
-                      </table>
-                    </div>
-                    <p class="text-nova-gray text-xs mt-2">*Medidas aproximadas. Si tienes dudas, contáctanos por WhatsApp.</p>
                   </div>
                 }
               </div>
@@ -183,9 +160,10 @@ export class ProductDetailComponent implements OnInit {
   mainImage: string | null = null;
   selectedSize = '';
   openSection = 'desc';
+  added = false;
   private whatsappNumber = '573187016549';
 
-  constructor(private api: ApiService, private route: ActivatedRoute) {}
+  constructor(private api: ApiService, private route: ActivatedRoute, private cart: CartService) {}
 
   ngOnInit() {
     this.route.params.subscribe(params => {
@@ -197,7 +175,14 @@ export class ProductDetailComponent implements OnInit {
     });
   }
 
-  selectSize(size: string) { this.selectedSize = size; }
+  selectSize(size: string) { this.selectedSize = size; this.added = false; }
+
+  addToCart() {
+    if (!this.product || !this.selectedSize) return;
+    const main = this.product.images?.find(i => i.isMain) || this.product.images?.[0];
+    this.cart.add(this.product, this.selectedSize, main?.imageData || null);
+    this.added = true;
+  }
 
   toggle(section: string) {
     this.openSection = this.openSection === section ? '' : section;

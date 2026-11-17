@@ -8,29 +8,54 @@ import { AuthService } from '../../../services/auth.service';
   standalone: true,
   imports: [FormsModule],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-nova-cream">
-      <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 class="font-display text-2xl font-bold text-center mb-6 text-nova-dark">Nova Admin</h1>
-        @if (error) {
-          <div class="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{{ error }}</div>
-        }
-        <form (submit)="login()">
-          <div class="mb-4">
-            <label class="block text-sm font-medium mb-1 text-nova-dark">Email</label>
-            <input type="email" [(ngModel)]="email" name="email"
-                   class="w-full border border-nova-blush rounded px-3 py-2 focus:outline-none focus:border-nova-rose" required>
-          </div>
-          <div class="mb-6">
-            <label class="block text-sm font-medium mb-1 text-nova-dark">Contraseña</label>
-            <input type="password" [(ngModel)]="password" name="password"
-                   class="w-full border border-nova-blush rounded px-3 py-2 focus:outline-none focus:border-nova-rose" required>
-          </div>
-          <button type="submit" [disabled]="loading"
-                  class="w-full bg-nova-dark text-white py-3 rounded font-medium text-sm uppercase tracking-wider hover:bg-nova-black transition disabled:opacity-50">
-            {{ loading ? 'Ingresando...' : 'Ingresar' }}
-          </button>
-        </form>
-      </div>
+    <div class="nova-admin min-h-screen grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] bg-[#f4f3f0]">
+      <!-- Marca -->
+      <section class="relative hidden lg:flex flex-col justify-between bg-[#1e1e1e] text-white p-12 overflow-hidden">
+        <img src="assets/logo-white.png" alt="Nova FIT" class="h-12 w-auto self-start">
+        <div class="relative z-10 max-w-sm">
+          <p class="text-[34px] leading-[1.15] font-bold tracking-tight">Tu tienda, tus números y tu inventario en un solo lugar.</p>
+          <p class="text-[#a8a49c] mt-4">Pedidos, finanzas y existencias de Nova FIT.</p>
+        </div>
+        <img src="assets/monogram-white.png" alt="" aria-hidden="true"
+             class="pointer-events-none select-none absolute -right-24 -bottom-24 w-[420px] opacity-[0.06]">
+      </section>
+
+      <!-- Formulario -->
+      <section class="flex items-center justify-center px-6 py-16">
+        <div class="w-full max-w-[380px]">
+          <img src="assets/logo-black.png" alt="Nova FIT" class="h-10 w-auto mb-10 lg:hidden">
+          <h1 class="text-[28px] font-bold tracking-tight mb-1">Ingresa al panel</h1>
+          <p class="text-[#6b6862] mb-8">Usa tu correo y contraseña de administradora.</p>
+
+          @if (error) {
+            <div class="bg-[#fbeceb] text-[#b3372f] px-4 py-3 rounded-lg mb-5 text-sm" role="alert">{{ error }}</div>
+          }
+
+          <form (submit)="login()" class="space-y-5">
+            <div>
+              <label for="email" class="block text-sm font-medium mb-1.5">Correo</label>
+              <input id="email" type="email" [(ngModel)]="email" name="email" autocomplete="username" required
+                     class="w-full border px-3.5 py-2.5 text-[15px]">
+            </div>
+            <div>
+              <label for="password" class="block text-sm font-medium mb-1.5">Contraseña</label>
+              <div class="relative">
+                <input id="password" [type]="show ? 'text' : 'password'" [(ngModel)]="password" name="password"
+                       autocomplete="current-password" required class="w-full border px-3.5 py-2.5 pr-20 text-[15px]">
+                <button type="button" (click)="show = !show"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 text-[13px] text-[#6b6862] hover:text-[#1e1e1e] px-2 py-1">
+                  {{ show ? 'Ocultar' : 'Mostrar' }}
+                </button>
+              </div>
+            </div>
+            <button type="submit" [disabled]="loading"
+                    class="w-full bg-nova-dark text-white py-3 font-semibold text-[15px] hover:bg-black transition disabled:opacity-50">
+              {{ loading ? 'Ingresando…' : 'Ingresar' }}
+            </button>
+          </form>
+          <a href="/" class="inline-block mt-8 text-sm text-[#6b6862] hover:text-[#1e1e1e]">Volver a la tienda</a>
+        </div>
+      </section>
     </div>
   `,
 })
@@ -39,6 +64,7 @@ export class AdminLoginComponent {
   password = '';
   error = '';
   loading = false;
+  show = false;
 
   constructor(private auth: AuthService, private router: Router) {}
 
@@ -47,7 +73,10 @@ export class AdminLoginComponent {
     this.error = '';
     this.auth.login(this.email, this.password).subscribe({
       next: () => this.router.navigate(['/admin']),
-      error: () => { this.error = 'Credenciales inválidas'; this.loading = false; },
+      error: () => {
+        this.error = 'El correo o la contraseña no coinciden. Revísalos e intenta de nuevo.';
+        this.loading = false;
+      },
     });
   }
 }

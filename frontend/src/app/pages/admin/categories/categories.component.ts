@@ -9,7 +9,7 @@ import { Category } from '../../../models/types';
   standalone: true,
   imports: [FormsModule],
   template: `
-    <div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="w-full">
       <div class="flex items-center justify-between mb-8">
         <h1 class="font-display text-3xl font-bold text-nova-dark">Categorías</h1>
         <button (click)="showForm = !showForm"

@@ -8,7 +8,11 @@ import categoryRoutes from "./routes/category.routes";
 import productRoutes from "./routes/product.routes";
 import settingsRoutes from "./routes/settings.routes";
 import imageRoutes from "./routes/image.routes";
+import orderRoutes from "./routes/order.routes";
+import inventoryRoutes from "./routes/inventory.routes";
+import financeRoutes from "./routes/finance.routes";
 import { errorHandler } from "./middleware/errors";
+import { wompiConfig } from "./services/wompi";
 
 dotenv.config();
 
@@ -25,6 +29,9 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/images", imageRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/inventory", inventoryRoutes);
+app.use("/api/finance", financeRoutes);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
@@ -37,6 +44,10 @@ AppDataSource.initialize()
     console.log("Database connected");
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      const wompi = wompiConfig();
+      if (!wompi.publicKey) console.log("Wompi: sin llaves, pagos en línea desactivados");
+      else console.log(`Wompi: ${wompi.publicKey.startsWith("pub_prod_") ? "PRODUCCIÓN" : "Sandbox"}`);
+      [...wompi.problems, ...wompi.warnings].forEach((p) => console.warn(`Wompi: ${p}`));
     });
   })
   .catch((error) => {

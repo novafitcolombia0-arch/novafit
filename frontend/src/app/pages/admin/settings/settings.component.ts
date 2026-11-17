@@ -8,7 +8,7 @@ import { compressImage } from '../../../services/image-compress';
   standalone: true,
   imports: [FormsModule],
   template: `
-    <div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="max-w-4xl">
       <h1 class="font-display text-3xl font-bold mb-8 text-nova-dark">Configuración del Sitio</h1>
 
       @if (saved) {
@@ -55,6 +55,24 @@ import { compressImage } from '../../../services/image-compress';
         }
       </div>
 
+      <div class="bg-white border border-nova-blush rounded-lg p-6 mb-6">
+        <h2 class="font-semibold text-lg mb-4 text-nova-dark">Envíos</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Costo de envío (COP)</label>
+            <input type="number" min="0" [(ngModel)]="shippingCost" name="shippingCost"
+                   class="w-full border border-nova-blush rounded px-3 py-2 focus:outline-none focus:border-nova-rose">
+            <p class="text-xs text-nova-gray mt-1">Se suma al total en el pago. 0 = envío gratis.</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Envío gratis desde (COP)</label>
+            <input type="number" min="0" [(ngModel)]="freeShippingFrom" name="freeShippingFrom"
+                   class="w-full border border-nova-blush rounded px-3 py-2 focus:outline-none focus:border-nova-rose">
+            <p class="text-xs text-nova-gray mt-1">Compras desde este valor no pagan envío. 0 = desactivado.</p>
+          </div>
+        </div>
+      </div>
+
       <button (click)="save()" [disabled]="saving"
               class="bg-nova-dark text-white px-6 py-2 text-sm rounded hover:bg-opacity-90 transition disabled:opacity-50">
         {{ saving ? 'Guardando...' : 'Guardar Configuración' }}
@@ -64,6 +82,8 @@ import { compressImage } from '../../../services/image-compress';
 })
 export class AdminSettingsComponent implements OnInit {
   heroImages: string[] = [];
+  shippingCost = 0;
+  freeShippingFrom = 0;
   saving = false;
   optimizing = false;
   saved = false;
@@ -73,6 +93,8 @@ export class AdminSettingsComponent implements OnInit {
 
   ngOnInit() {
     this.api.getSettings().subscribe(settings => {
+      this.shippingCost = parseInt(settings['shippingCost'] || '0', 10) || 0;
+      this.freeShippingFrom = parseInt(settings['freeShippingFrom'] || '0', 10) || 0;
       if (settings['heroImages']) {
         try { this.heroImages = JSON.parse(settings['heroImages']); } catch { this.heroImages = []; }
       }
@@ -107,7 +129,11 @@ export class AdminSettingsComponent implements OnInit {
     this.saving = true;
     this.saved = false;
     this.error = '';
-    this.api.updateSettings({ heroImages: JSON.stringify(this.heroImages) }).subscribe({
+    this.api.updateSettings({
+      heroImages: JSON.stringify(this.heroImages),
+      shippingCost: String(Math.max(0, Math.round(Number(this.shippingCost) || 0))),
+      freeShippingFrom: String(Math.max(0, Math.round(Number(this.freeShippingFrom) || 0))),
+    }).subscribe({
       next: () => { this.saved = true; this.saving = false; },
       error: () => { this.error = 'Error al guardar'; this.saving = false; },
     });

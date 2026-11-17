@@ -23,3 +23,58 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ===================== Panel de administración =====================
+   Afina las páginas del panel sin reescribirlas: superficies blancas con
+   borde cálido, controles uniformes, cifras tabulares y títulos más firmes. */
+.nova-admin {
+  --ink: #1e1e1e;
+  --sand: #b59677;
+  --line: #e7e4df;
+  --muted: #6b6862;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+
+  h1.text-3xl {
+    font-size: 30px;
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  /* Tarjetas y tablas */
+  .rounded-lg { border-radius: 14px; }
+  .border-nova-blush { border-color: var(--line); }
+  .border-nova-pink { border-color: #efece7; }
+  .bg-nova-cream { background-color: #faf9f7; }
+  table { font-variant-numeric: tabular-nums; }
+  thead th { font-size: 12.5px; font-weight: 500; color: var(--muted); }
+  tbody tr { transition: background-color 0.12s; }
+  tbody tr:hover { background-color: #fbfaf8; }
+
+  /* Etiquetas pequeñas en mayúsculas → sentence case (más tranquilo) */
+  .uppercase.tracking-wider { text-transform: none; letter-spacing: 0; font-size: 12.5px; }
+  .text-xl.font-bold, .text-2xl.font-bold { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+  /* Controles */
+  input:not([type='checkbox']):not([type='radio']):not([type='file']), select, textarea {
+    border-radius: 8px;
+    border-color: var(--line);
+    background-color: #fff;
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--sand) !important;
+    box-shadow: 0 0 0 3px rgba(181, 150, 119, 0.18);
+  }
+  button.bg-nova-dark, a.bg-nova-dark { border-radius: 8px; }
+  button:focus-visible, a:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+
+  /* Pestañas y chips de filtros */
+  .rounded-full.border { border-color: var(--line); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nova-admin * { transition: none !important; }
+}

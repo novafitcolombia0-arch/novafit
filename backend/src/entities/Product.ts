@@ -27,6 +27,10 @@ export class Product {
   @Column("decimal", { precision: 10, scale: 2 })
   price: number;
 
+  // Lo que cuesta la prenda (producción/compra). select: false → nunca sale en la tienda pública
+  @Column("decimal", { precision: 10, scale: 2, nullable: true, select: false })
+  cost: number | null;
+
   @Column({ default: true })
   isActive: boolean;
 
