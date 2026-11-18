@@ -130,7 +130,7 @@ export class AdminLayoutComponent implements OnInit {
   constructor(private auth: AuthService, private api: ApiService, private router: Router) {}
 
   ngOnInit() {
-    try { this.email = JSON.parse(localStorage.getItem('nova_user') || '{}').email || ''; } catch {}
+    this.email = this.auth.currentEmail();
     this.refreshBadge();
     // Se actualiza al navegar (por ejemplo, después de marcar un pedido como despachado)
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => this.refreshBadge());

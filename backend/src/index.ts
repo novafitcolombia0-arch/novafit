@@ -22,9 +22,10 @@ dotenv.config();
 jwtSecret(); // falla al arrancar si JWT_SECRET falta o es débil
 
 const app = express();
-// Solo se confía en el proxy de Railway (1 salto): así req.ip es la IP real y no se puede falsear
-// con una cabecera X-Forwarded-For inventada (importante para los límites de intentos)
-app.set("trust proxy", 1);
+// Railway pasa por 2 proxies (entrada + interno) y reescribe X-Forwarded-For con la IP real del
+// visitante; confiar en esos 2 saltos hace que req.ip sea la IP real y no se pueda falsear con una
+// cabecera inventada (comprobado en QA). Importante para los límites de intentos.
+app.set("trust proxy", parseInt(process.env.TRUST_PROXY_HOPS || "2", 10));
 const PORT = process.env.PORT || 3000;
 
 // Cabeceras de seguridad. Las imágenes de /api/images las usa la tienda desde otro dominio
