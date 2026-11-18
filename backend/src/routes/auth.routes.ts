@@ -40,7 +40,7 @@ router.get("/me", authMiddleware, async (req: AuthRequest, res: Response) => {
   const user = await userRepo().findOne({ where: { id: req.userId! } });
   if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
   // clientIp: la IP que ve el servidor (sirve para comprobar que los límites usan la IP real)
-  res.json({ id: user.id, email: user.email, role: user.role, clientIp: req.ip });
+  res.json({ id: user.id, email: user.email, role: user.role, clientIp: req.ip, forwardedFor: req.headers["x-forwarded-for"] ?? null });
 });
 
 /** Cambiar la contraseña del admin: cierra todas las demás sesiones abiertas */
