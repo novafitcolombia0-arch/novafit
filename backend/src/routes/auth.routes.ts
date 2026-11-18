@@ -39,7 +39,8 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
 router.get("/me", authMiddleware, async (req: AuthRequest, res: Response) => {
   const user = await userRepo().findOne({ where: { id: req.userId! } });
   if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
-  res.json({ id: user.id, email: user.email, role: user.role });
+  // clientIp: la IP que ve el servidor (sirve para comprobar que los límites usan la IP real)
+  res.json({ id: user.id, email: user.email, role: user.role, clientIp: req.ip });
 });
 
 /** Cambiar la contraseña del admin: cierra todas las demás sesiones abiertas */

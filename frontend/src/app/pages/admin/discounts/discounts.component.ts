@@ -57,10 +57,32 @@ const emptyForm = () => ({
         } @else {
           <p class="mt-4 text-sm text-nova-gray">No hay cupón de bienvenida: el modal no se muestra en la tienda.</p>
         }
-        <button type="button" (click)="quickWelcome()" [disabled]="busy"
-                class="mt-4 text-sm px-4 py-2 rounded border border-nova-dark text-nova-dark hover:bg-nova-dark hover:text-white transition disabled:opacity-40">
-          {{ welcome ? 'Generar un cupón de bienvenida nuevo (20% primera compra)' : 'Crear cupón de bienvenida (20% primera compra)' }}
-        </button>
+
+        <!-- Porcentaje y condición: editan el cupón actual o se usan al generar uno nuevo -->
+        <div class="mt-5 pt-4 border-t border-nova-blush flex flex-wrap items-end gap-4 text-sm">
+          <label class="block">
+            <span class="block text-nova-gray mb-1">Porcentaje de descuento</span>
+            <span class="flex items-center gap-2">
+              <input type="number" min="1" max="100" [(ngModel)]="welcomePercent" [ngModelOptions]="{ standalone: true }"
+                     class="w-24 border border-nova-blush rounded px-3 py-2 bg-white focus:outline-none focus:border-nova-rose">
+              <span class="text-nova-dark">%</span>
+            </span>
+          </label>
+          <label class="flex items-center gap-2 pb-2">
+            <input type="checkbox" [(ngModel)]="welcomeFirstOnly" [ngModelOptions]="{ standalone: true }"> Solo primera compra
+          </label>
+          @if (welcome) {
+            <button type="button" (click)="saveWelcome()" [disabled]="busy || !welcomeValid || !welcomeChanged"
+                    class="bg-nova-dark text-white px-4 py-2 rounded hover:bg-nova-black transition disabled:opacity-40">
+              Guardar cambios
+            </button>
+          }
+          <button type="button" (click)="quickWelcome()" [disabled]="busy || !welcomeValid"
+                  class="px-4 py-2 rounded border border-nova-dark text-nova-dark hover:bg-nova-dark hover:text-white transition disabled:opacity-40">
+            {{ welcome ? 'Generar cupón nuevo' : 'Crear cupón de bienvenida' }} ({{ welcomePercent }}%{{ welcomeFirstOnly ? ' primera compra' : '' }})
+          </button>
+        </div>
+        @if (!welcomeValid) { <p class="text-xs text-red-600 mt-2">El porcentaje debe estar entre 1 y 100.</p> }
       </section>
 
       <!-- Crear código -->
@@ -157,6 +179,9 @@ export class AdminDiscountsComponent implements OnInit {
   message = '';
   error = '';
   copied = '';
+  // Porcentaje y condición del cupón de bienvenida (se cargan del cupón actual)
+  welcomePercent = 20;
+  welcomeFirstOnly = true;
 
   constructor(private api: ApiService) {}
 
@@ -164,10 +189,22 @@ export class AdminDiscountsComponent implements OnInit {
 
   get welcome(): DiscountCode | undefined { return this.codes.find(d => d.isWelcome); }
 
+  get welcomeValid() { return Number.isInteger(Number(this.welcomePercent)) && this.welcomePercent >= 1 && this.welcomePercent <= 100; }
+
+  get welcomeChanged() {
+    const w = this.welcome;
+    return !!w && (Number(this.welcomePercent) !== w.percent || this.welcomeFirstOnly !== w.firstPurchaseOnly);
+  }
+
   load() {
     this.loading = true;
     this.api.getDiscounts().subscribe({
-      next: codes => { this.codes = codes; this.loading = false; },
+      next: codes => {
+        this.codes = codes;
+        this.loading = false;
+        const w = this.welcome;
+        if (w) { this.welcomePercent = w.percent; this.welcomeFirstOnly = w.firstPurchaseOnly; }
+      },
       error: () => { this.error = 'No se pudieron cargar los códigos'; this.loading = false; },
     });
   }
@@ -203,9 +240,21 @@ export class AdminDiscountsComponent implements OnInit {
   /** Genera al instante un cupón nuevo de 20% para la primera compra y lo pone en el modal */
   quickWelcome() {
     this.run<DiscountCode>(
-      this.api.createDiscount({ percent: 20, firstPurchaseOnly: true, isWelcome: true, prefix: 'BIENVENIDA' }),
+      this.api.createDiscount({ percent: Number(this.welcomePercent), firstPurchaseOnly: this.welcomeFirstOnly, isWelcome: true, prefix: 'BIENVENIDA' }),
       'Cupón de bienvenida creado',
-      (d) => { this.message = `Nuevo cupón de bienvenida: ${d.code} (20% primera compra). El modal ya lo entrega.`; },
+      (d) => {
+        this.message = `Nuevo cupón de bienvenida: ${d.code} (${d.percent}%${d.firstPurchaseOnly ? ' primera compra' : ''}). El modal ya lo entrega.`;
+      },
+    );
+  }
+
+  /** Cambia el % (o la condición) del cupón de bienvenida actual; el modal lo muestra al instante */
+  saveWelcome() {
+    const w = this.welcome;
+    if (!w) return;
+    this.run(
+      this.api.updateDiscount(w.id, { percent: Number(this.welcomePercent), firstPurchaseOnly: this.welcomeFirstOnly }),
+      `Cupón de bienvenida actualizado: ${this.welcomePercent}%${this.welcomeFirstOnly ? ' en la primera compra' : ''}. El modal ya muestra el nuevo porcentaje.`,
     );
   }
 
