@@ -22,10 +22,9 @@ const ICONS: Record<string, string> = {
 };
 
 @Component({
-  selector: 'app-admin-layout',
-  standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
-  template: `
+    selector: 'app-admin-layout',
+    imports: [RouterOutlet, RouterLink, RouterLinkActive],
+    template: `
     <div class="nova-admin min-h-screen lg:flex bg-[#f4f3f0]">
       <!-- Barra superior (móvil) -->
       <header class="lg:hidden sticky top-0 z-40 flex items-center justify-between h-14 px-4 bg-[#1e1e1e] text-white">
@@ -92,9 +91,9 @@ const ICONS: Record<string, string> = {
       </main>
     </div>
   `,
-  styles: [`
+    styles: [`
     .nav-link.is-active { background: rgba(255,255,255,0.08); color: #fff; box-shadow: inset 3px 0 0 #b59677; }
-  `],
+  `]
 })
 export class AdminLayoutComponent implements OnInit {
   open = false;

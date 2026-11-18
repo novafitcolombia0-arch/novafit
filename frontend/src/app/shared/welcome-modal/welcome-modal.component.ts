@@ -13,10 +13,9 @@ const store = {
 };
 
 @Component({
-  selector: 'app-welcome-modal',
-  standalone: true,
-  imports: [FormsModule, RouterLink],
-  template: `
+    selector: 'app-welcome-modal',
+    imports: [FormsModule, RouterLink],
+    template: `
     @if (open) {
       <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50" (click)="close()">
         <div role="dialog" aria-modal="true" aria-labelledby="welcome-title"
@@ -59,7 +58,7 @@ const store = {
         </div>
       </div>
     }
-  `,
+  `
 })
 export class WelcomeModalComponent implements OnInit, OnDestroy {
   open = false;

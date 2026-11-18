@@ -6,10 +6,9 @@ import { CartService } from '../../services/cart.service';
 import { OrderSummary } from '../../models/types';
 
 @Component({
-  selector: 'app-order-result',
-  standalone: true,
-  imports: [RouterLink, CurrencyPipe],
-  template: `
+    selector: 'app-order-result',
+    imports: [RouterLink, CurrencyPipe],
+    template: `
     <div class="max-w-xl mx-auto px-4 py-16 text-center">
       @if (notFound) {
         <h1 class="font-display text-2xl font-bold text-nova-dark mb-4">No encontramos este pedido</h1>
@@ -64,7 +63,7 @@ import { OrderSummary } from '../../models/types';
         <p class="text-nova-gray">Cargando...</p>
       }
     </div>
-  `,
+  `
 })
 export class OrderResultComponent implements OnInit, OnDestroy {
   order: OrderSummary | null = null;

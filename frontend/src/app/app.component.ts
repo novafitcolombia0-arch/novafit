@@ -6,10 +6,9 @@ import { NavbarComponent } from './shared/navbar/navbar.component';
 import { FooterComponent } from './shared/footer/footer.component';
 
 @Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [RouterOutlet, NavbarComponent, FooterComponent],
-  template: `
+    selector: 'app-root',
+    imports: [RouterOutlet, NavbarComponent, FooterComponent],
+    template: `
     @if (isAdmin()) {
       <router-outlet></router-outlet>
     } @else {
@@ -19,7 +18,7 @@ import { FooterComponent } from './shared/footer/footer.component';
       </main>
       <app-footer></app-footer>
     }
-  `,
+  `
 })
 export class AppComponent {
   private router = inject(Router);

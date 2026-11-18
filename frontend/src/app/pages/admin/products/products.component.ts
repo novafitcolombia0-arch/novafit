@@ -7,10 +7,9 @@ import { CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 @Component({
-  selector: 'app-admin-products',
-  standalone: true,
-  imports: [FormsModule, CurrencyPipe, RouterLink],
-  template: `
+    selector: 'app-admin-products',
+    imports: [FormsModule, CurrencyPipe, RouterLink],
+    template: `
     <div class="w-full">
       <div class="flex items-center justify-between mb-8">
         <h1 class="font-display text-3xl font-bold text-nova-dark">Productos</h1>
@@ -185,7 +184,7 @@ import { RouterLink } from '@angular/router';
         </table>
       </div>
     </div>
-  `,
+  `
 })
 export class AdminProductsComponent implements OnInit {
   categories: Category[] = [];

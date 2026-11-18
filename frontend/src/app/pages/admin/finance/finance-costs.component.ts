@@ -12,10 +12,9 @@ interface EditableRow extends CostRow {
 }
 
 @Component({
-  selector: 'app-finance-costs',
-  standalone: true,
-  imports: [FormsModule],
-  template: `
+    selector: 'app-finance-costs',
+    imports: [FormsModule],
+    template: `
     @if (error) { <div class="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{{ error }}</div> }
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
@@ -91,7 +90,7 @@ interface EditableRow extends CostRow {
         @if (feesSaved) { <span class="text-green-700 text-xs">✓ Guardado</span> }
       </div>
     </div>
-  `,
+  `
 })
 export class FinanceCostsComponent implements OnInit {
   rows: EditableRow[] = [];

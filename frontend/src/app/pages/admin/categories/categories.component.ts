@@ -5,10 +5,9 @@ import { compressImage } from '../../../services/image-compress';
 import { Category } from '../../../models/types';
 
 @Component({
-  selector: 'app-admin-categories',
-  standalone: true,
-  imports: [FormsModule],
-  template: `
+    selector: 'app-admin-categories',
+    imports: [FormsModule],
+    template: `
     <div class="w-full">
       <div class="flex items-center justify-between mb-8">
         <h1 class="font-display text-3xl font-bold text-nova-dark">Categorías</h1>
@@ -108,7 +107,7 @@ import { Category } from '../../../models/types';
         </table>
       </div>
     </div>
-  `,
+  `
 })
 export class AdminCategoriesComponent implements OnInit {
   categories: Category[] = [];

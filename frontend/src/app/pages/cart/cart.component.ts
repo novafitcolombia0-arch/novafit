@@ -5,10 +5,9 @@ import { CartService } from '../../services/cart.service';
 import { ApiService } from '../../services/api.service';
 
 @Component({
-  selector: 'app-cart',
-  standalone: true,
-  imports: [RouterLink, CurrencyPipe],
-  template: `
+    selector: 'app-cart',
+    imports: [RouterLink, CurrencyPipe],
+    template: `
     <div class="max-w-5xl mx-auto px-4 py-8">
       <h1 class="font-display text-3xl font-bold mb-8 text-nova-dark">Tu bolsa</h1>
 
@@ -69,7 +68,7 @@ import { ApiService } from '../../services/api.service';
         </div>
       }
     </div>
-  `,
+  `
 })
 export class CartComponent implements OnInit {
   private shippingCost = signal(0);

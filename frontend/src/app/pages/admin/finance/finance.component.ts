@@ -23,10 +23,9 @@ const shift = (date: string, days: number) => {
 const lastDayOfMonth = (y: number, m: number) => new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
 
 @Component({
-  selector: 'app-admin-finance',
-  standalone: true,
-  imports: [FormsModule, RouterLink, FinanceSummaryComponent, FinanceClosesComponent, FinanceSalesComponent, FinanceExpensesComponent, FinanceCostsComponent],
-  template: `
+    selector: 'app-admin-finance',
+    imports: [FormsModule, RouterLink, FinanceSummaryComponent, FinanceClosesComponent, FinanceSalesComponent, FinanceExpensesComponent, FinanceCostsComponent],
+    template: `
     <div class="w-full">
       <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
@@ -102,7 +101,7 @@ const lastDayOfMonth = (y: number, m: number) => new Date(Date.UTC(y, m, 0)).toI
         @case ('costs') { <app-finance-costs /> }
       }
     </div>
-  `,
+  `
 })
 export class AdminFinanceComponent implements OnInit {
   tab: Tab = 'summary';

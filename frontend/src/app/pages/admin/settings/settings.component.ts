@@ -5,10 +5,9 @@ import { AuthService } from '../../../services/auth.service';
 import { compressImage } from '../../../services/image-compress';
 
 @Component({
-  selector: 'app-admin-settings',
-  standalone: true,
-  imports: [FormsModule],
-  template: `
+    selector: 'app-admin-settings',
+    imports: [FormsModule],
+    template: `
     <div class="max-w-4xl">
       <h1 class="font-display text-3xl font-bold mb-8 text-nova-dark">Configuración del Sitio</h1>
 
@@ -111,7 +110,7 @@ import { compressImage } from '../../../services/image-compress';
         </form>
       </div>
     </div>
-  `,
+  `
 })
 export class AdminSettingsComponent implements OnInit {
   heroImages: string[] = [];

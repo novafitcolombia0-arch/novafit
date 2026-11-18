@@ -33,10 +33,9 @@ const METHOD_LABELS: Record<string, string> = {
 type SortKey = 'createdAt' | 'total';
 
 @Component({
-  selector: 'app-admin-orders',
-  standalone: true,
-  imports: [CurrencyPipe, DatePipe, FormsModule],
-  template: `
+    selector: 'app-admin-orders',
+    imports: [CurrencyPipe, DatePipe, FormsModule],
+    template: `
     <div class="w-full">
       <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
         <h1 class="font-display text-3xl font-bold text-nova-dark">Pedidos</h1>
@@ -196,7 +195,7 @@ type SortKey = 'createdAt' | 'total';
         </nav>
       }
     </div>
-  `,
+  `
 })
 export class AdminOrdersComponent implements OnInit {
   orders: Order[] = [];

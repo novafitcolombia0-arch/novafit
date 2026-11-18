@@ -9,10 +9,9 @@ import { OrderSummary } from '../../models/types';
  * WOMPI_SIMULATION=true. No cobra nada: solo decide si el pago sale aprobado o rechazado.
  */
 @Component({
-  selector: 'app-simulated-payment',
-  standalone: true,
-  imports: [CurrencyPipe, RouterLink],
-  template: `
+    selector: 'app-simulated-payment',
+    imports: [CurrencyPipe, RouterLink],
+    template: `
     <div class="min-h-[70vh] flex items-start justify-center px-4 py-12 bg-[#f4f3f0]">
       <div class="w-full max-w-md">
         <div class="bg-[#fff6db] border border-[#f0dca0] text-[#6b5313] rounded-xl px-4 py-3 text-sm mb-5">
@@ -63,7 +62,7 @@ import { OrderSummary } from '../../models/types';
         }
       </div>
     </div>
-  `,
+  `
 })
 export class SimulatedPaymentComponent implements OnInit {
   order: OrderSummary | null = null;

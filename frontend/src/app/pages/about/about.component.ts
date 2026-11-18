@@ -2,10 +2,9 @@ import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
-  selector: 'app-about',
-  standalone: true,
-  imports: [RouterLink],
-  template: `
+    selector: 'app-about',
+    imports: [RouterLink],
+    template: `
     <section class="max-w-3xl mx-auto px-4 py-16">
       <p class="text-sm uppercase tracking-widest text-nova-rose text-center mb-3">Conócenos</p>
       <h1 class="font-display text-3xl md:text-4xl font-bold text-center text-nova-dark mb-10">Una historia que nació de un sueño.</h1>
@@ -30,6 +29,6 @@ import { RouterLink } from '@angular/router';
         <a routerLink="/catalogo" class="inline-block bg-nova-dark text-white px-8 py-3 text-sm uppercase tracking-widest hover:bg-opacity-90 transition">Shop Now</a>
       </div>
     </section>
-  `,
+  `
 })
 export class AboutComponent {}

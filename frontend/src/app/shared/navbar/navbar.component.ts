@@ -3,10 +3,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CartService } from '../../services/cart.service';
 
 @Component({
-  selector: 'app-navbar',
-  standalone: true,
-  imports: [RouterLink, RouterLinkActive],
-  template: `
+    selector: 'app-navbar',
+    imports: [RouterLink, RouterLinkActive],
+    template: `
     <nav class="bg-nova-dark text-white sticky top-0 z-50">
       <div class="max-w-7xl mx-auto px-4">
         <div class="flex items-center justify-between h-16">
@@ -44,7 +43,7 @@ import { CartService } from '../../services/cart.service';
         </div>
       }
     </nav>
-  `,
+  `
 })
 export class NavbarComponent {
   menuOpen = false;

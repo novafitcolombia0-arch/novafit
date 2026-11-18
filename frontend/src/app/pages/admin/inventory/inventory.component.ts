@@ -25,10 +25,9 @@ interface Selection {
 }
 
 @Component({
-  selector: 'app-admin-inventory',
-  standalone: true,
-  imports: [CurrencyPipe, DatePipe, DecimalPipe, FormsModule, RouterLink],
-  template: `
+    selector: 'app-admin-inventory',
+    imports: [CurrencyPipe, DatePipe, DecimalPipe, FormsModule, RouterLink],
+    template: `
     <div class="w-full">
       <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
@@ -208,7 +207,7 @@ interface Selection {
         </div>
       }
     </div>
-  `,
+  `
 })
 export class AdminInventoryComponent implements OnInit {
   tab: 'stock' | 'movements' = 'stock';

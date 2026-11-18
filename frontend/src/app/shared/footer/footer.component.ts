@@ -2,10 +2,9 @@ import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
-  selector: 'app-footer',
-  standalone: true,
-  imports: [RouterLink],
-  template: `
+    selector: 'app-footer',
+    imports: [RouterLink],
+    template: `
     <footer class="bg-nova-dark text-white mt-16">
       <div class="max-w-7xl mx-auto px-4 py-12">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -32,6 +31,6 @@ import { RouterLink } from '@angular/router';
         </div>
       </div>
     </footer>
-  `,
+  `
 })
 export class FooterComponent {}

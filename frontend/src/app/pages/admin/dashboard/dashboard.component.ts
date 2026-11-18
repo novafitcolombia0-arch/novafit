@@ -13,10 +13,9 @@ const todayCo = () => new Date(Date.now() - 5 * 3600_000).toISOString().slice(0,
 const WEEKDAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
 @Component({
-  selector: 'app-admin-dashboard',
-  standalone: true,
-  imports: [RouterLink, DatePipe, BarChartComponent],
-  template: `
+    selector: 'app-admin-dashboard',
+    imports: [RouterLink, DatePipe, BarChartComponent],
+    template: `
     <div class="mb-8">
       <h1 class="text-[28px] sm:text-[32px] font-bold tracking-tight text-[#1e1e1e]">{{ greeting }}</h1>
       <p class="text-[#6b6862] mt-1">{{ todayText }}</p>
@@ -128,7 +127,7 @@ const WEEKDAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes
         }
       </section>
     </div>
-  `,
+  `
 })
 export class AdminDashboardComponent implements OnInit {
   summary: FinanceSummary | null = null;

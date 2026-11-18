@@ -6,10 +6,9 @@ import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 @Component({
-  selector: 'app-catalog',
-  standalone: true,
-  imports: [RouterLink, CurrencyPipe, FormsModule],
-  template: `
+    selector: 'app-catalog',
+    imports: [RouterLink, CurrencyPipe, FormsModule],
+    template: `
     <div class="max-w-7xl mx-auto px-4 py-8">
       <h1 class="font-display text-3xl font-bold mb-8 text-nova-dark">Tienda</h1>
 
@@ -60,7 +59,7 @@ import { FormsModule } from '@angular/forms';
         }
       </div>
     </div>
-  `,
+  `
 })
 export class CatalogComponent implements OnInit {
   categories: Category[] = [];

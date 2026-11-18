@@ -15,10 +15,9 @@ const emptyForm = () => ({
 });
 
 @Component({
-  selector: 'app-admin-discounts',
-  standalone: true,
-  imports: [DatePipe, FormsModule],
-  template: `
+    selector: 'app-admin-discounts',
+    imports: [DatePipe, FormsModule],
+    template: `
     <div class="w-full">
       <h1 class="font-display text-3xl font-bold text-nova-dark mb-6">Descuentos</h1>
 
@@ -146,9 +145,9 @@ const emptyForm = () => ({
       </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     .input { @apply w-full border border-nova-blush rounded px-3 py-2 bg-white focus:outline-none focus:border-nova-rose; }
-  `],
+  `]
 })
 export class AdminDiscountsComponent implements OnInit {
   codes: DiscountCode[] = [];

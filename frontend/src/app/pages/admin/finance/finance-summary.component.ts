@@ -16,10 +16,9 @@ interface KpiCard {
 }
 
 @Component({
-  selector: 'app-finance-summary',
-  standalone: true,
-  imports: [BarChartComponent],
-  template: `
+    selector: 'app-finance-summary',
+    imports: [BarChartComponent],
+    template: `
     @if (error) { <div class="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{{ error }}</div> }
     @if (!data) {
       <p class="text-nova-gray text-center py-16">{{ error ? '' : 'Cargando...' }}</p>
@@ -132,7 +131,7 @@ interface KpiCard {
         }
       </div>
     }
-  `,
+  `
 })
 export class FinanceSummaryComponent implements OnChanges {
   @Input({ required: true }) range!: FinanceRange;

@@ -4,10 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
 
 @Component({
-  selector: 'app-admin-login',
-  standalone: true,
-  imports: [FormsModule],
-  template: `
+    selector: 'app-admin-login',
+    imports: [FormsModule],
+    template: `
     <div class="nova-admin min-h-screen grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] bg-[#f4f3f0]">
       <!-- Marca -->
       <section class="relative hidden lg:flex flex-col justify-between bg-[#1e1e1e] text-white p-12 overflow-hidden">
@@ -57,7 +56,7 @@ import { AuthService } from '../../../services/auth.service';
         </div>
       </section>
     </div>
-  `,
+  `
 })
 export class AdminLoginComponent {
   email = '';

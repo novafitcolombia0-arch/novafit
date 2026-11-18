@@ -15,10 +15,9 @@ const DEPARTMENTS = [
 ];
 
 @Component({
-  selector: 'app-checkout',
-  standalone: true,
-  imports: [RouterLink, CurrencyPipe, FormsModule],
-  template: `
+    selector: 'app-checkout',
+    imports: [RouterLink, CurrencyPipe, FormsModule],
+    template: `
     <div class="max-w-5xl mx-auto px-4 py-8">
       <h1 class="font-display text-3xl font-bold mb-8 text-nova-dark">Finalizar compra</h1>
 
@@ -129,9 +128,9 @@ const DEPARTMENTS = [
       </form>
     </div>
   `,
-  styles: [`
+    styles: [`
     .input { @apply w-full border border-nova-blush rounded px-3 py-2 text-sm bg-white focus:outline-none focus:border-nova-rose; }
-  `],
+  `]
 })
 export class CheckoutComponent implements OnInit {
   departments = DEPARTMENTS;

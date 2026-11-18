@@ -5,10 +5,9 @@ import { ApiService } from '../../../services/api.service';
 import { Subscriber } from '../../../models/types';
 
 @Component({
-  selector: 'app-admin-subscribers',
-  standalone: true,
-  imports: [DatePipe, FormsModule],
-  template: `
+    selector: 'app-admin-subscribers',
+    imports: [DatePipe, FormsModule],
+    template: `
     <div class="w-full">
       <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
         <h1 class="font-display text-3xl font-bold text-nova-dark">Suscriptores</h1>
@@ -71,7 +70,7 @@ import { Subscriber } from '../../../models/types';
         </nav>
       }
     </div>
-  `,
+  `
 })
 export class AdminSubscribersComponent implements OnInit {
   subscribers: Subscriber[] = [];

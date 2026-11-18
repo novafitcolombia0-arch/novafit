@@ -8,10 +8,9 @@ import { EXPENSE_LABELS, label, money } from './finance-format';
 const today = () => new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 10);
 
 @Component({
-  selector: 'app-finance-expenses',
-  standalone: true,
-  imports: [FormsModule, DatePipe],
-  template: `
+    selector: 'app-finance-expenses',
+    imports: [FormsModule, DatePipe],
+    template: `
     @if (error) { <div class="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{{ error }}</div> }
 
     <div class="bg-white border border-nova-blush rounded-lg p-5 mb-6">
@@ -73,7 +72,7 @@ const today = () => new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 1
       </table>
     </div>
   `,
-  styles: [`.inp { @apply w-full border border-nova-blush rounded px-2 py-1.5 bg-white focus:outline-none focus:border-nova-rose; }`],
+    styles: [`.inp { @apply w-full border border-nova-blush rounded px-2 py-1.5 bg-white focus:outline-none focus:border-nova-rose; }`]
 })
 export class FinanceExpensesComponent implements OnChanges {
   @Input({ required: true }) range!: FinanceRange;

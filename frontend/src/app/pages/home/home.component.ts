@@ -6,10 +6,9 @@ import { CurrencyPipe } from '@angular/common';
 import { WelcomeModalComponent } from '../../shared/welcome-modal/welcome-modal.component';
 
 @Component({
-  selector: 'app-home',
-  standalone: true,
-  imports: [RouterLink, CurrencyPipe, WelcomeModalComponent],
-  template: `
+    selector: 'app-home',
+    imports: [RouterLink, CurrencyPipe, WelcomeModalComponent],
+    template: `
     <app-welcome-modal></app-welcome-modal>
     <section class="relative text-white overflow-hidden h-[500px] md:h-[600px]">
       @if (heroImages.length > 0) {
@@ -91,7 +90,7 @@ import { WelcomeModalComponent } from '../../shared/welcome-modal/welcome-modal.
         <a routerLink="/catalogo" class="inline-block border border-nova-dark text-nova-dark px-8 py-3 text-sm uppercase tracking-widest hover:bg-nova-black hover:text-white transition">Ver Todo</a>
       </div>
     </section>
-  `,
+  `
 })
 export class HomeComponent implements OnInit, OnDestroy {
   categories: Category[] = [];

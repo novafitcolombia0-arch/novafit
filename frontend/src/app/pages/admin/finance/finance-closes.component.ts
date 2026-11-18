@@ -6,10 +6,9 @@ import { BarChartComponent, ChartSeries } from './bar-chart.component';
 import { COLOR_PROFIT, COLOR_SALES, MONTHS, MONTHS_SHORT, money, pct } from './finance-format';
 
 @Component({
-  selector: 'app-finance-closes',
-  standalone: true,
-  imports: [FormsModule, BarChartComponent],
-  template: `
+    selector: 'app-finance-closes',
+    imports: [FormsModule, BarChartComponent],
+    template: `
     @if (error) { <div class="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{{ error }}</div> }
 
     <div class="flex items-center gap-3 mb-4">
@@ -116,7 +115,7 @@ import { COLOR_PROFIT, COLOR_SALES, MONTHS, MONTHS_SHORT, money, pct } from './f
         </tbody>
       </table>
     </div>
-  `,
+  `
 })
 export class FinanceClosesComponent implements OnChanges {
   @Input() filters: Partial<FinanceRange> = {};

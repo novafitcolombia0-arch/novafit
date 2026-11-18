@@ -10,10 +10,9 @@ interface SaleLine { productId: number | null; size: string; quantity: number; u
 const today = () => new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 10);
 
 @Component({
-  selector: 'app-finance-sales',
-  standalone: true,
-  imports: [FormsModule, DatePipe],
-  template: `
+    selector: 'app-finance-sales',
+    imports: [FormsModule, DatePipe],
+    template: `
     @if (error) { <div class="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{{ error }}</div> }
 
     <div class="flex flex-wrap items-center gap-3 mb-4">
@@ -137,7 +136,7 @@ const today = () => new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 1
     </div>
     <p class="text-xs text-nova-gray mt-2">* Venta con prendas sin costo registrado: la utilidad real es menor.</p>
   `,
-  styles: [`.inp { @apply w-full border border-nova-blush rounded px-2 py-1.5 bg-white focus:outline-none focus:border-nova-rose; }`],
+    styles: [`.inp { @apply w-full border border-nova-blush rounded px-2 py-1.5 bg-white focus:outline-none focus:border-nova-rose; }`]
 })
 export class FinanceSalesComponent implements OnInit, OnChanges {
   @Input({ required: true }) range!: FinanceRange;

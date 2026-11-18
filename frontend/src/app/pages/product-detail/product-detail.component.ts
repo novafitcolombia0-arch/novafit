@@ -6,10 +6,9 @@ import { CurrencyPipe } from '@angular/common';
 import { CartService } from '../../services/cart.service';
 
 @Component({
-  selector: 'app-product-detail',
-  standalone: true,
-  imports: [RouterLink, CurrencyPipe],
-  template: `
+    selector: 'app-product-detail',
+    imports: [RouterLink, CurrencyPipe],
+    template: `
     @if (product) {
       <div class="max-w-6xl mx-auto px-4 py-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -153,7 +152,7 @@ import { CartService } from '../../services/cart.service';
         </div>
       </div>
     }
-  `,
+  `
 })
 export class ProductDetailComponent implements OnInit {
   product: Product | null = null;
