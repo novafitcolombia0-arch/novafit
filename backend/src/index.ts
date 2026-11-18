@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import dotenv from "dotenv";
 import { AppDataSource } from "./config/data-source";
 import authRoutes from "./routes/auth.routes";
@@ -15,16 +16,25 @@ import discountRoutes from "./routes/discount.routes";
 import subscriberRoutes from "./routes/subscriber.routes";
 import { errorHandler } from "./middleware/errors";
 import { wompiConfig } from "./services/wompi";
+import { apiLimiter, hasBearer, jwtSecret } from "./config/security";
 
 dotenv.config();
+jwtSecret(); // falla al arrancar si JWT_SECRET falta o es débil
 
 const app = express();
-app.set("trust proxy", true); // Railway termina HTTPS en su proxy; así req.protocol es https
+// Solo se confía en el proxy de Railway (1 salto): así req.ip es la IP real y no se puede falsear
+// con una cabecera X-Forwarded-For inventada (importante para los límites de intentos)
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 3000;
 
+// Cabeceras de seguridad. Las imágenes de /api/images las usa la tienda desde otro dominio
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors());
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.use("/api", apiLimiter);
+// Cuerpos grandes solo para el panel (subida de fotos); las rutas públicas aceptan muy poco
+const largeBody = express.json({ limit: "15mb" });
+const smallBody = express.json({ limit: "100kb" });
+app.use((req, res, next) => (hasBearer(req) ? largeBody : smallBody)(req, res, next));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);

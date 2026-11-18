@@ -3,12 +3,13 @@ import { createRouter } from "../middleware/errors";
 import { AppDataSource } from "../config/data-source";
 import { DiscountCode, Subscriber } from "../entities";
 import { authMiddleware } from "../middleware/auth";
+import { subscribeLimiter } from "../config/security";
 
 const router = createRouter();
 const repo = () => AppDataSource.getRepository(Subscriber);
 
 /** Pública: suscribirse desde el modal y recibir el código de bienvenida */
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", subscribeLimiter, async (req: Request, res: Response) => {
   const email = String(req.body?.email ?? "").trim().toLowerCase().slice(0, 120);
   const name = String(req.body?.name ?? "").trim().slice(0, 80) || undefined;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ message: "Escribe un correo válido" });

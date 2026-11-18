@@ -29,6 +29,10 @@ export class AuthService {
       );
   }
 
+  setToken(token: string) {
+    localStorage.setItem('nova_token', token);
+  }
+
   logout() {
     localStorage.removeItem('nova_token');
     localStorage.removeItem('nova_user');

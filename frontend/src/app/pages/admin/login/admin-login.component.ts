@@ -73,8 +73,10 @@ export class AdminLoginComponent {
     this.error = '';
     this.auth.login(this.email, this.password).subscribe({
       next: () => this.router.navigate(['/admin']),
-      error: () => {
-        this.error = 'El correo o la contraseña no coinciden. Revísalos e intenta de nuevo.';
+      error: (err) => {
+        this.error = err?.status === 429
+          ? (err?.error?.message || 'Demasiados intentos. Espera unos minutos.')
+          : 'El correo o la contraseña no coinciden. Revísalos e intenta de nuevo.';
         this.loading = false;
       },
     });

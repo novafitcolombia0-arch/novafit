@@ -12,6 +12,10 @@ import {
   reserveStock,
 } from "../services/orders";
 import { evaluateDiscount } from "../services/discounts";
+import { checkoutLimiter } from "../config/security";
+
+// Pedidos sin pagar que una misma persona puede tener apartando inventario a la vez
+const MAX_PENDING_PER_EMAIL = 3;
 
 const router = createRouter();
 const orderRepo = () => AppDataSource.getRepository(Order);
@@ -69,7 +73,7 @@ const clean = (value: unknown, max = 200) => String(value ?? "").trim().slice(0,
  * Crea el pedido, aparta el inventario y devuelve la URL del Web Checkout de Wompi.
  * Los precios se toman de la base de datos, nunca del navegador.
  */
-router.post("/checkout", async (req: Request, res: Response) => {
+router.post("/checkout", checkoutLimiter, async (req: Request, res: Response) => {
   const wompi = wompiConfig();
   if (!wompi.configured && !simulationEnabled()) {
     if (wompi.problems.length) console.error("Wompi mal configurado:", wompi.problems.join(" | "));
@@ -162,6 +166,15 @@ router.post("/checkout", async (req: Request, res: Response) => {
   const total = subtotal - discountAmount + shippingCost;
 
   await expireStaleOrders().catch((e) => console.error("expireStaleOrders", e?.message));
+
+  // Evita que alguien deje la tienda "agotada" creando pedidos sin pagar en bucle
+  const pending = await orderRepo()
+    .createQueryBuilder("o")
+    .where("LOWER(o.email) = :email AND o.status = 'PENDING' AND o.\"stockReserved\" = true", { email: c.email })
+    .getCount();
+  if (pending >= MAX_PENDING_PER_EMAIL) {
+    return res.status(429).json({ message: "Tienes pagos pendientes sin terminar. Complétalos o espera unos minutos antes de iniciar otro." });
+  }
 
   let order: Order;
   try {

@@ -28,6 +28,12 @@ export function errorHandler(
   if (err?.code === "23505") {
     return res.status(409).json({ message: "Ya existe un registro con ese valor (slug duplicado)" });
   }
+  // Errores del cliente que lanza Express (cuerpo demasiado grande, JSON mal formado…)
+  const status = Number(err?.status || err?.statusCode);
+  if (status >= 400 && status < 500) {
+    const message = status === 413 ? "La petición es demasiado grande" : "Petición no válida";
+    return res.status(status).json({ message });
+  }
   console.error(err?.message ?? err);
   res.status(500).json({ message: "Error interno del servidor" });
 }

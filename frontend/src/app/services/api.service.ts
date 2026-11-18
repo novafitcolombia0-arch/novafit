@@ -184,6 +184,10 @@ export class ApiService {
     return this.http.patch<Order>(`${this.apiUrl}/orders/${id}`, data, this.adminHeaders());
   }
 
+  changePassword(currentPassword: string, newPassword: string): Observable<{ message: string; token: string }> {
+    return this.http.put<{ message: string; token: string }>(`${this.apiUrl}/auth/password`, { currentPassword, newPassword }, this.adminHeaders());
+  }
+
   // ----- Descuentos y suscripción -----
 
   validateDiscount(code: string, email: string, subtotal: number): Observable<{ code: string; percent: number; amount: number }> {

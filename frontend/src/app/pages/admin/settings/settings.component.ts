@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { AuthService } from '../../../services/auth.service';
 import { compressImage } from '../../../services/image-compress';
 
 @Component({
@@ -77,6 +78,38 @@ import { compressImage } from '../../../services/image-compress';
               class="bg-nova-dark text-white px-6 py-2 text-sm rounded hover:bg-opacity-90 transition disabled:opacity-50">
         {{ saving ? 'Guardando...' : 'Guardar Configuración' }}
       </button>
+
+      <!-- Seguridad -->
+      <div class="bg-white border border-nova-blush rounded-lg p-6 mt-10">
+        <h2 class="font-semibold text-lg mb-1 text-nova-dark">Cambiar contraseña</h2>
+        <p class="text-sm text-nova-gray mb-4">Mínimo 12 caracteres. Al cambiarla se cierran las sesiones abiertas en otros dispositivos.</p>
+        @if (pwMessage) { <div class="bg-green-50 text-green-700 p-3 rounded mb-4 text-sm">{{ pwMessage }}</div> }
+        @if (pwError) { <div class="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{{ pwError }}</div> }
+        <form (ngSubmit)="changePassword()" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <label class="block">
+            <span class="block text-sm font-medium mb-1">Contraseña actual</span>
+            <input type="password" [(ngModel)]="pw.current" name="currentPassword" autocomplete="current-password" required
+                   class="w-full border border-nova-blush rounded px-3 py-2 focus:outline-none focus:border-nova-rose">
+          </label>
+          <label class="block">
+            <span class="block text-sm font-medium mb-1">Nueva contraseña</span>
+            <input type="password" [(ngModel)]="pw.next" name="newPassword" autocomplete="new-password" required minlength="12"
+                   class="w-full border border-nova-blush rounded px-3 py-2 focus:outline-none focus:border-nova-rose">
+          </label>
+          <label class="block">
+            <span class="block text-sm font-medium mb-1">Repetir nueva contraseña</span>
+            <input type="password" [(ngModel)]="pw.confirm" name="confirmPassword" autocomplete="new-password" required
+                   class="w-full border border-nova-blush rounded px-3 py-2 focus:outline-none focus:border-nova-rose">
+          </label>
+          <div class="md:col-span-3">
+            <button type="submit" [disabled]="changingPw || !pw.current || pw.next.length < 12 || pw.next !== pw.confirm"
+                    class="bg-nova-dark text-white px-6 py-2 text-sm rounded hover:bg-opacity-90 transition disabled:opacity-50">
+              {{ changingPw ? 'Guardando…' : 'Cambiar contraseña' }}
+            </button>
+            @if (pw.confirm && pw.next !== pw.confirm) { <span class="text-xs text-red-600 ml-3">Las contraseñas no coinciden</span> }
+          </div>
+        </form>
+      </div>
     </div>
   `,
 })
@@ -89,7 +122,30 @@ export class AdminSettingsComponent implements OnInit {
   saved = false;
   error = '';
 
-  constructor(private api: ApiService) {}
+  pw = { current: '', next: '', confirm: '' };
+  changingPw = false;
+  pwMessage = '';
+  pwError = '';
+
+  constructor(private api: ApiService, private auth: AuthService) {}
+
+  changePassword() {
+    this.changingPw = true;
+    this.pwMessage = '';
+    this.pwError = '';
+    this.api.changePassword(this.pw.current, this.pw.next).subscribe({
+      next: res => {
+        this.auth.setToken(res.token); // esta sesión sigue abierta con el token nuevo
+        this.pw = { current: '', next: '', confirm: '' };
+        this.pwMessage = res.message;
+        this.changingPw = false;
+      },
+      error: err => {
+        this.pwError = err?.error?.message || 'No se pudo cambiar la contraseña';
+        this.changingPw = false;
+      },
+    });
+  }
 
   ngOnInit() {
     this.api.getSettings().subscribe(settings => {

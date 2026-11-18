@@ -4,12 +4,13 @@ import { AppDataSource } from "../config/data-source";
 import { DiscountCode } from "../entities";
 import { authMiddleware } from "../middleware/auth";
 import { evaluateDiscount, generateCode, normalizeCode } from "../services/discounts";
+import { discountLimiter } from "../config/security";
 
 const router = createRouter();
 const repo = () => AppDataSource.getRepository(DiscountCode);
 
 /** Pública: valida un código en el checkout y devuelve el porcentaje */
-router.post("/validate", async (req: Request, res: Response) => {
+router.post("/validate", discountLimiter, async (req: Request, res: Response) => {
   const email = String(req.body?.email ?? "").trim().toLowerCase().slice(0, 120);
   const subtotal = Math.max(0, Math.round(Number(req.body?.subtotal) || 0));
   const result = await evaluateDiscount(req.body?.code, email, subtotal);

@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { AppDataSource } from "../config/data-source";
 import { User, Category, Product, ProductImage, ProductSize } from "../entities";
 
@@ -13,17 +14,19 @@ async function seed() {
   const imageRepo = AppDataSource.getRepository(ProductImage);
   const sizeRepo = AppDataSource.getRepository(ProductSize);
 
-  const existingAdmin = await userRepo.findOne({ where: { email: "admin@nova.com" } });
+  // La contraseña nunca va en el código: se toma de ADMIN_PASSWORD o se genera una aleatoria
+  const adminEmail = (process.env.ADMIN_EMAIL || "admin@nova.com").toLowerCase();
+  const existingAdmin = await userRepo.findOne({ where: { email: adminEmail } });
   if (!existingAdmin) {
-    const hashedPassword = await bcrypt.hash("admin123", 10);
+    const fromEnv = process.env.ADMIN_PASSWORD || "";
+    if (fromEnv && fromEnv.length < 12) throw new Error("ADMIN_PASSWORD debe tener al menos 12 caracteres");
+    const password = fromEnv || crypto.randomBytes(12).toString("base64url");
     await userRepo.save(
-      userRepo.create({
-        email: "admin@nova.com",
-        password: hashedPassword,
-        role: "admin",
-      })
+      userRepo.create({ email: adminEmail, password: await bcrypt.hash(password, 12), role: "admin" })
     );
-    console.log("Admin user created: admin@nova.com / admin123");
+    console.log(fromEnv
+      ? `Admin creado: ${adminEmail} (contraseña de ADMIN_PASSWORD)`
+      : `Admin creado: ${adminEmail} / contraseña generada: ${password}  ← guárdala y cámbiala en el panel`);
   }
 
   const categories = [
