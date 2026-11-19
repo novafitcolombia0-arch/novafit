@@ -10,8 +10,11 @@ import { Category, ProductImage, SiteSetting } from "../entities";
 
 const router = createRouter();
 
+// Solo se aceptan (y se sirven) fotos: nada de SVG, HTML ni otros tipos que el navegador pueda ejecutar
+const IMAGE_DATA_URL = /^data:image\/(jpeg|png|webp|gif|avif);base64,/;
+
 export const isDataUrl = (value: unknown): value is `data:${string}` =>
-  typeof value === "string" && value.startsWith("data:");
+  typeof value === "string" && IMAGE_DATA_URL.test(value);
 
 const version = (data: string) => crypto.createHash("md5").update(data).digest("hex").slice(0, 10);
 
@@ -47,10 +50,10 @@ export function heroImagesWithUrls(req: Request, value: string): string {
 }
 
 function sendDataUrl(res: Response, data: string | null | undefined, immutable: boolean) {
-  const match = data?.match(/^data:([^;,]+)?(;base64)?,(.*)$/s);
+  const match = isDataUrl(data) ? data.match(/^data:(image\/[a-z]+);base64,(.*)$/s) : null;
   if (!match) return res.status(404).json({ message: "Imagen no encontrada" });
-  const [, mime = "application/octet-stream", base64, payload] = match;
-  const body = base64 ? Buffer.from(payload, "base64") : Buffer.from(decodeURIComponent(payload));
+  const [, mime, payload] = match;
+  const body = Buffer.from(payload, "base64");
   res.set("Content-Type", mime);
   res.set("Cache-Control", immutable ? "public, max-age=31536000, immutable" : "public, max-age=300");
   res.send(body);

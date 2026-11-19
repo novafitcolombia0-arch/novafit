@@ -50,7 +50,11 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response) => {
   if (!category)
     return res.status(404).json({ message: "Categoría no encontrada" });
 
-  const { id: _id, products: _products, ...changes } = req.body;
+  // Solo los campos editables; id, productos u otros campos que lleguen se ignoran
+  const changes: Record<string, any> = {};
+  for (const key of ["name", "slug", "description", "image", "isActive"]) {
+    if (req.body[key] !== undefined) changes[key] = req.body[key];
+  }
   if (changes.slug !== undefined) changes.slug = slugify(changes.slug);
   // Si llega la URL de la imagen actual (no una nueva ni vacía), se conserva la guardada
   if (changes.image && !isDataUrl(changes.image)) delete changes.image;

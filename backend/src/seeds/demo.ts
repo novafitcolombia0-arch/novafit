@@ -10,6 +10,7 @@
  * No usar contra la base de producción.
  */
 import "reflect-metadata";
+import sharp from "sharp";
 import { In, Like } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import {
@@ -51,15 +52,16 @@ const addDays = (day: string, n: number) => {
   return d.toISOString().slice(0, 10);
 };
 
-/** Imagen de relleno (SVG) con el color y el nombre de la prenda */
-function placeholder(name: string, color: string) {
+/** Imagen de relleno con el color y el nombre de la prenda (SVG pasado a JPEG: la API solo sirve fotos) */
+async function placeholder(name: string, color: string) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
 <rect width="600" height="800" fill="${color}"/>
 <path d="M210 170 L390 170 L430 330 L400 650 L320 650 L300 420 L280 650 L200 650 L170 330 Z" fill="rgba(255,255,255,0.28)"/>
 <text x="300" y="730" font-family="Arial, sans-serif" font-size="34" fill="#ffffff" text-anchor="middle">${name}</text>
 <text x="300" y="90" font-family="Arial, sans-serif" font-size="22" fill="rgba(255,255,255,0.8)" text-anchor="middle" letter-spacing="6">DEMO</text>
 </svg>`;
-  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+  const jpeg = await sharp(Buffer.from(svg)).jpeg({ quality: 80 }).toBuffer();
+  return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
 }
 
 // ---------- catálogo de demo ----------
@@ -229,7 +231,7 @@ async function loadDemo() {
         cost,
         categoryId: categories.get(catName)!.id,
         isActive: true,
-        images: [{ imageData: placeholder(name, color), mimeType: "image/svg+xml", isMain: true } as ProductImage],
+        images: [{ imageData: await placeholder(name, color), mimeType: "image/jpeg", isMain: true } as ProductImage],
         sizes: sizes as ProductSize[],
       })
     );

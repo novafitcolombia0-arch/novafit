@@ -9,7 +9,18 @@ import { enqueueEmail, paymentEmail } from "./email";
 
 // Minutos que se aparta el inventario mientras la clienta paga.
 // Si no paga en ese tiempo, el pedido pasa a EXPIRED y las prendas vuelven a la tienda.
-export const RESERVATION_MINUTES = 60;
+// Si un pago (p. ej. PSE) se aprueba después de vencida la reserva, igual se descuenta (forceTakeStock).
+export const RESERVATION_MINUTES = 30;
+
+// Cada cuánto el servidor libera por su cuenta las reservas vencidas
+export const EXPIRE_EVERY_MINUTES = 5;
+
+/** Libera periódicamente las reservas vencidas, aunque nadie compre ni abra el panel */
+export function startReservationSweeper() {
+  const run = () => expireStaleOrders().catch((e) => console.error("expireStaleOrders", e?.message));
+  run();
+  setInterval(run, EXPIRE_EVERY_MINUTES * 60_000).unref();
+}
 
 export class OutOfStockError extends Error {
   constructor(public productName: string, public size: string) {

@@ -17,7 +17,8 @@ import subscriberRoutes from "./routes/subscriber.routes";
 import campaignRoutes from "./routes/campaign.routes";
 import { errorHandler } from "./middleware/errors";
 import { wompiConfig } from "./services/wompi";
-import { apiLimiter, hasBearer, jwtSecret } from "./config/security";
+import { apiLimiter, corsOrigin, hasValidBearer, jwtSecret } from "./config/security";
+import { startReservationSweeper } from "./services/orders";
 
 dotenv.config();
 jwtSecret(); // falla al arrancar si JWT_SECRET falta o es débil
@@ -31,12 +32,13 @@ const PORT = process.env.PORT || 3000;
 
 // Cabeceras de seguridad. Las imágenes de /api/images las usa la tienda desde otro dominio
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
-app.use(cors());
+app.use(cors({ origin: corsOrigin() }));
 app.use("/api", apiLimiter);
-// Cuerpos grandes solo para el panel (subida de fotos); las rutas públicas aceptan muy poco
+// Cuerpos grandes solo para el panel (subida de fotos) con una sesión firmada de verdad;
+// el resto (incluido quien mande un "Bearer" inventado) acepta muy poco
 const largeBody = express.json({ limit: "15mb" });
 const smallBody = express.json({ limit: "100kb" });
-app.use((req, res, next) => (hasBearer(req) ? largeBody : smallBody)(req, res, next));
+app.use((req, res, next) => (hasValidBearer(req) ? largeBody : smallBody)(req, res, next));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
@@ -61,6 +63,7 @@ AppDataSource.initialize()
     console.log("Database connected");
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      startReservationSweeper();
       const wompi = wompiConfig();
       if (!wompi.publicKey) console.log("Wompi: sin llaves, pagos en línea desactivados");
       else console.log(`Wompi: ${wompi.publicKey.startsWith("pub_prod_") ? "PRODUCCIÓN" : "Sandbox"}`);

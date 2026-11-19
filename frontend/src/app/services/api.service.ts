@@ -70,6 +70,11 @@ export class ApiService {
     return this.http.get<Record<string, string>>(`${this.apiUrl}/settings`);
   }
 
+  /** Configuración completa (incluye datos internos como la comisión de Wompi); solo panel */
+  getAdminSettings(): Observable<Record<string, string>> {
+    return this.http.get<Record<string, string>>(`${this.apiUrl}/settings/admin`, this.adminHeaders());
+  }
+
   updateSettings(settings: Record<string, string>): Observable<any> {
     return this.http.put(`${this.apiUrl}/settings`, { settings }, this.adminHeaders());
   }

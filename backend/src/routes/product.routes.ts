@@ -105,8 +105,11 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response) => {
   if (!product)
     return res.status(404).json({ message: "Producto no encontrado" });
 
-  const { images, sizes, cost, ...rest } = req.body;
-  Object.assign(product, rest);
+  const { images, sizes, cost } = req.body;
+  // Solo los campos editables; id, relaciones u otros campos que lleguen se ignoran
+  for (const key of ["name", "slug", "description", "price", "categoryId", "isActive"] as const) {
+    if (req.body[key] !== undefined) (product as any)[key] = req.body[key];
+  }
   if (cost !== undefined) {
     product.cost = cost === null || cost === "" ? null : Math.max(0, Math.round(Number(cost)));
   }

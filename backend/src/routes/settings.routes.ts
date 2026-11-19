@@ -8,14 +8,28 @@ import { heroImagesWithUrls, isDataUrl } from "./image.routes";
 const router = createRouter();
 const settingRepo = () => AppDataSource.getRepository(SiteSetting);
 
-router.get("/", async (req: Request, res: Response) => {
+// Datos internos del negocio: solo los ve el panel (GET /settings/admin)
+const PRIVATE_KEYS = new Set(["wompiFeePercent", "wompiFeeFixed"]);
+
+async function allSettings(req: Request, includePrivate: boolean) {
   const settings = await settingRepo().find();
   const result: Record<string, string> = {};
-  settings.forEach((s) => (result[s.key] = s.key === "heroImages" ? heroImagesWithUrls(req, s.value) : s.value));
-  res.json(result);
+  settings
+    .filter((s) => includePrivate || !PRIVATE_KEYS.has(s.key))
+    .forEach((s) => (result[s.key] = s.key === "heroImages" ? heroImagesWithUrls(req, s.value) : s.value));
+  return result;
+}
+
+router.get("/", async (req: Request, res: Response) => {
+  res.json(await allSettings(req, false));
+});
+
+router.get("/admin", authMiddleware, async (req: Request, res: Response) => {
+  res.json(await allSettings(req, true));
 });
 
 router.get("/:key", async (req: Request, res: Response) => {
+  if (PRIVATE_KEYS.has(req.params.key as string)) return res.status(404).json({ message: "Setting no encontrada" });
   const setting = await settingRepo().findOne({
     where: { key: req.params.key as string },
   });

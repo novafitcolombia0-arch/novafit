@@ -113,7 +113,7 @@ export class FinanceCostsComponent implements OnInit {
       },
       error: () => (this.error = 'No se pudieron cargar los productos'),
     });
-    this.api.getSettings().subscribe(s => {
+    this.api.getAdminSettings().subscribe(s => {
       if (s['wompiFeePercent']) this.feePercent = parseFloat(s['wompiFeePercent']);
       if (s['wompiFeeFixed']) this.feeFixed = parseFloat(s['wompiFeeFixed']);
     });

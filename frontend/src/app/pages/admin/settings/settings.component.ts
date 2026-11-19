@@ -147,7 +147,7 @@ export class AdminSettingsComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.api.getSettings().subscribe(settings => {
+    this.api.getAdminSettings().subscribe(settings => {
       this.shippingCost = parseInt(settings['shippingCost'] || '0', 10) || 0;
       this.freeShippingFrom = parseInt(settings['freeShippingFrom'] || '0', 10) || 0;
       if (settings['heroImages']) {
