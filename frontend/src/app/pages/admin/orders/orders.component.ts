@@ -162,7 +162,9 @@ type SortKey = 'createdAt' | 'total';
                           <input [(ngModel)]="o.trackingNumber" placeholder="Número de guía"
                                  class="w-full border border-nova-blush rounded px-3 py-2 mb-2">
                           <button (click)="saveFulfillment(o)" class="bg-nova-dark text-white px-4 py-2 rounded text-sm">Guardar</button>
-                          @if (savedId === o.id) { <span class="text-green-700 text-xs ml-2">Guardado</span> }
+                          @if (savedId === o.id) {
+                            <span class="text-green-700 text-xs ml-2">Guardado{{ emailSentId === o.id ? ' · correo con la guía enviado a la clienta' : '' }}</span>
+                          }
                         </div>
                       }
                     </div>
@@ -323,10 +325,13 @@ export class AdminOrdersComponent implements OnInit {
 
   itemCount(o: Order) { return o.items?.reduce((sum, i) => sum + i.quantity, 0) ?? 0; }
 
+  emailSentId: number | null = null;
+
   saveFulfillment(o: Order) {
     this.savedId = null;
+    this.emailSentId = null;
     this.api.updateOrder(o.id, { fulfillmentStatus: o.fulfillmentStatus, trackingNumber: o.trackingNumber || '' }).subscribe({
-      next: () => { this.savedId = o.id; },
+      next: res => { this.savedId = o.id; if (res.emailSent) this.emailSentId = o.id; },
       error: () => { this.error = 'No se pudo guardar el despacho'; },
     });
   }

@@ -19,6 +19,7 @@ const ICONS: Record<string, string> = {
   logout: 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10',
   percent: 'M19 5 5 19M7.5 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm9 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z',
   mail: 'M4 6h16v12H4zM4 7l8 6 8-6',
+  send: 'M4 12 20 4l-4 16-5-6-7-2Zm7 2 9-10',
 };
 
 @Component({
@@ -122,6 +123,7 @@ export class AdminLayoutComponent implements OnInit {
       items: [
         { path: '/admin/descuentos', label: 'Descuentos', icon: 'percent' },
         { path: '/admin/suscriptores', label: 'Suscriptores', icon: 'mail' },
+        { path: '/admin/promociones', label: 'Promociones', icon: 'send' },
       ],
     },
     { title: 'Ajustes', items: [{ path: '/admin/configuracion', label: 'Configuración', icon: 'settings' }] },

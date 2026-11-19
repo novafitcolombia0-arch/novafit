@@ -13,6 +13,7 @@ import {
 } from "../services/orders";
 import { evaluateDiscount } from "../services/discounts";
 import { checkoutLimiter } from "../config/security";
+import { sendEmail, shippedEmail } from "../services/email";
 
 // Pedidos sin pagar que una misma persona puede tener apartando inventario a la vez
 const MAX_PENDING_PER_EMAIL = 3;
@@ -326,6 +327,7 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
   const order = await orderRepo().findOne({ where: { id: parseInt(req.params.id as string, 10) } });
   if (!order) return res.status(404).json({ message: "Pedido no encontrado" });
 
+  const previousTracking = order.trackingNumber || "";
   const { fulfillmentStatus, trackingNumber } = req.body || {};
   const allowed = ["POR_DESPACHAR", "DESPACHADO", "ENTREGADO", "CANCELADO"];
   if (fulfillmentStatus !== undefined) {
@@ -338,7 +340,15 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
     fulfillmentStatus: order.fulfillmentStatus,
     trackingNumber: order.trackingNumber,
   });
-  res.json(order);
+
+  // Se avisa a la clienta cuando se pone (o cambia) el número de guía de un pedido pagado
+  const newTracking = order.trackingNumber || "";
+  let emailSent = false;
+  if (newTracking && newTracking !== previousTracking && order.status === "APPROVED" && order.email) {
+    const result = await sendEmail({ to: order.email, toName: order.customerName, ...shippedEmail(order), category: "envio" });
+    emailSent = result.ok;
+  }
+  res.json({ ...order, emailSent });
 });
 
 export default router;

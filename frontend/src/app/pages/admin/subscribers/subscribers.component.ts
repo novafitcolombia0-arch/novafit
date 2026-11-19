@@ -32,6 +32,7 @@ import { Subscriber } from '../../../models/types';
               <th class="px-3 py-2.5 font-semibold">Correo</th>
               <th class="px-3 py-2.5 font-semibold">Nombre</th>
               <th class="px-3 py-2.5 font-semibold">Código entregado</th>
+              <th class="px-3 py-2.5 font-semibold">Estado</th>
               <th class="px-3 py-2.5 font-semibold">Fecha</th>
               <th class="px-3 py-2.5"></th>
             </tr>
@@ -49,6 +50,11 @@ import { Subscriber } from '../../../models/types';
                 <td class="px-3 py-2.5 text-nova-dark">{{ s.email }}</td>
                 <td class="px-3 py-2.5 text-nova-gray">{{ s.name || '—' }}</td>
                 <td class="px-3 py-2.5 font-mono text-nova-gray">{{ s.discountCode || '—' }}</td>
+                <td class="px-3 py-2.5">
+                  <span class="px-2 py-0.5 rounded text-xs whitespace-nowrap" [class]="s.unsubscribed ? 'bg-gray-100 text-nova-gray' : 'bg-green-100 text-green-700'">
+                    {{ s.unsubscribed ? 'De baja' : 'Activa' }}
+                  </span>
+                </td>
                 <td class="px-3 py-2.5 text-nova-gray whitespace-nowrap">{{ s.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
                 <td class="px-3 py-2.5 text-right"><button (click)="remove(s)" class="text-xs underline text-red-600">Eliminar</button></td>
               </tr>
@@ -110,7 +116,7 @@ export class AdminSubscribersComponent implements OnInit {
   /** CSV con ; (Excel en español lo abre en columnas) y BOM para las tildes */
   exportCsv() {
     const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const rows = [['Correo', 'Nombre', 'Código entregado', 'Fecha'],
+    const rows = [['Correo', 'Nombre', 'Código entregado', 'Estado', 'Fecha'],
       ...this.filtered.map(s => [s.email, s.name, s.discountCode, new Date(s.createdAt).toLocaleString('es-CO')])];
     const csv = '﻿' + rows.map(r => r.map(esc).join(';')).join('\r\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));

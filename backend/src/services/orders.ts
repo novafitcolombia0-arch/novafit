@@ -5,6 +5,7 @@ import { Order, OrderItem } from "../entities";
 import { changeStock } from "./inventory";
 import { WompiTransaction } from "./wompi";
 import { markDiscountUsed } from "./discounts";
+import { paymentEmail, sendEmail } from "./email";
 
 // Minutos que se aparta el inventario mientras la clienta paga.
 // Si no paga en ese tiempo, el pedido pasa a EXPIRED y las prendas vuelven a la tienda.
@@ -91,7 +92,8 @@ async function lockOrder(manager: EntityManager, where: Partial<Order>) {
  * por eso es idempotente: aplicar el mismo evento dos veces no descuadra el inventario.
  */
 export async function applyTransaction(tx: WompiTransaction): Promise<Order | null> {
-  return AppDataSource.transaction(async (manager) => {
+  let approvedNow = false;
+  const result = await AppDataSource.transaction(async (manager) => {
     const order = await lockOrder(manager, { reference: tx.reference });
     if (!order) return null;
 
@@ -106,6 +108,7 @@ export async function applyTransaction(tx: WompiTransaction): Promise<Order | nu
         if (order.status === "APPROVED") break;
         if (!order.stockReserved) await forceTakeStock(manager, order.items, order.reference);
         await markDiscountUsed(manager, order.discountCode); // el código cuenta como usado solo al pagar
+        approvedNow = true;
         order.status = "APPROVED";
         order.stockReserved = true;
         order.paidAt = new Date();
@@ -147,6 +150,13 @@ export async function applyTransaction(tx: WompiTransaction): Promise<Order | nu
     });
     return order;
   });
+
+  // Solo la primera vez que pasa a pagado (el webhook y la redirección pueden llegar los dos)
+  if (approvedNow && result?.email) {
+    const mail = paymentEmail(result);
+    sendEmail({ to: result.email, toName: result.customerName, ...mail, category: "pago" }).catch(() => {});
+  }
+  return result;
 }
 
 /** Libera el inventario de los pedidos que llevan demasiado tiempo sin pagarse */

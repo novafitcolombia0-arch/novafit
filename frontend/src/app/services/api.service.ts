@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import {
   Category, CheckoutRequest, CostRow, Expense, FinanceFilterOptions, FinanceRange, FinanceSummary, InventoryMovement, InventoryProduct,
   MonthlyClose, Order, OrderSummary, Product, Sale, YearlyCloseRow, DiscountCode, Subscriber, WelcomeOffer,
+  CampaignDraft, CampaignsInfo, EmailCampaign,
 } from '../models/types';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
@@ -180,8 +181,8 @@ export class ApiService {
     return this.http.get<Order[]>(`${this.apiUrl}/orders${query}`, this.adminHeaders());
   }
 
-  updateOrder(id: number, data: Partial<Pick<Order, 'fulfillmentStatus' | 'trackingNumber'>>): Observable<Order> {
-    return this.http.patch<Order>(`${this.apiUrl}/orders/${id}`, data, this.adminHeaders());
+  updateOrder(id: number, data: Partial<Pick<Order, 'fulfillmentStatus' | 'trackingNumber'>>): Observable<Order & { emailSent?: boolean }> {
+    return this.http.patch<Order & { emailSent?: boolean }>(`${this.apiUrl}/orders/${id}`, data, this.adminHeaders());
   }
 
   changePassword(currentPassword: string, newPassword: string): Observable<{ message: string; token: string }> {
@@ -220,6 +221,20 @@ export class ApiService {
 
   getSubscribers(): Observable<Subscriber[]> {
     return this.http.get<Subscriber[]>(`${this.apiUrl}/subscribers`, this.adminHeaders());
+  }
+
+  // ----- Promociones por correo -----
+
+  getCampaigns(): Observable<CampaignsInfo> {
+    return this.http.get<CampaignsInfo>(`${this.apiUrl}/campaigns`, this.adminHeaders());
+  }
+
+  sendTestCampaign(data: CampaignDraft & { to?: string }): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/campaigns/test`, data, this.adminHeaders());
+  }
+
+  sendCampaign(data: CampaignDraft): Observable<EmailCampaign> {
+    return this.http.post<EmailCampaign>(`${this.apiUrl}/campaigns`, data, this.adminHeaders());
   }
 
   deleteSubscriber(id: number): Observable<{ message: string }> {

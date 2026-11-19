@@ -97,7 +97,42 @@ export interface Subscriber {
   email: string;
   name?: string;
   discountCode?: string;
+  unsubscribed?: boolean;
+  unsubscribedAt?: string | null;
   createdAt: string;
+}
+
+export interface EmailCampaign {
+  id: number;
+  subject: string;
+  title: string;
+  message: string;
+  discountCode?: string;
+  buttonText?: string;
+  buttonUrl?: string;
+  status: 'SENDING' | 'SENT';
+  recipients: number;
+  sent: number;
+  failed: number;
+  createdAt: string;
+  finishedAt?: string | null;
+}
+
+export interface CampaignDraft {
+  subject: string;
+  title: string;
+  message: string;
+  discountCode?: string;
+  buttonText?: string;
+  buttonUrl?: string;
+}
+
+export interface CampaignsInfo {
+  configured: boolean;
+  provider: 'twilio' | 'sendgrid' | null;
+  from: string | null;
+  activeSubscribers: number;
+  campaigns: EmailCampaign[];
 }
 
 export interface WelcomeOffer {

@@ -1,6 +1,6 @@
 import { DataSource } from "typeorm";
 import dotenv from "dotenv";
-import { Category, Product, ProductImage, ProductSize, User, SiteSetting, Order, OrderItem, InventoryMovement, Expense, DiscountCode, Subscriber } from "../entities";
+import { Category, Product, ProductImage, ProductSize, User, SiteSetting, Order, OrderItem, InventoryMovement, Expense, DiscountCode, Subscriber, EmailCampaign } from "../entities";
 dotenv.config();
 
 // En la nube (Neon, Render, Railway...) se usa DATABASE_URL con SSL;
@@ -20,5 +20,5 @@ export const AppDataSource = new DataSource({
   ...connection,
   synchronize: true,
   logging: false,
-  entities: [Category, Product, ProductImage, ProductSize, User, SiteSetting, Order, OrderItem, InventoryMovement, Expense, DiscountCode, Subscriber],
+  entities: [Category, Product, ProductImage, ProductSize, User, SiteSetting, Order, OrderItem, InventoryMovement, Expense, DiscountCode, Subscriber, EmailCampaign],
 });

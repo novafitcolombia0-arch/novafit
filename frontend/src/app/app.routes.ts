@@ -76,6 +76,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/admin/discounts/discounts.component').then(m => m.AdminDiscountsComponent),
       },
       {
+        path: 'promociones',
+        loadComponent: () => import('./pages/admin/campaigns/campaigns.component').then(m => m.AdminCampaignsComponent),
+      },
+      {
         path: 'suscriptores',
         loadComponent: () => import('./pages/admin/subscribers/subscribers.component').then(m => m.AdminSubscribersComponent),
       },
