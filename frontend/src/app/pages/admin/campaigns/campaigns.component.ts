@@ -4,7 +4,23 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
 import { CampaignDraft, CampaignsInfo } from '../../../models/types';
 
-const emptyDraft = (): CampaignDraft => ({ subject: '', title: '', message: '', discountCode: '', buttonText: 'Shop Now', buttonUrl: '' });
+// Plantilla por defecto: "beneficio exclusivo" (se puede editar antes de enviar)
+const emptyDraft = (): CampaignDraft => ({
+  subject: 'Un beneficio exclusivo para ti 🤍',
+  title: 'UN BENEFICIO EXCLUSIVO',
+  message: `¡Nos encanta que hagas parte de NOVA FIT!
+
+Queremos agradecerte por confiar en nuestra marca y elegirnos para acompañarte en cada una de tus versiones.
+
+Por eso, tenemos un beneficio especial reservado para ti: disfruta de 10% OFF en tu primera compra.
+
+Canjea tu código directamente en nuestra página web al finalizar tu pedido.
+
+Esperamos verte pronto de nuevo por aquí. Tenemos muchas cosas lindas preparadas para ti.`,
+  discountCode: '',
+  buttonText: 'Comprar ahora',
+  buttonUrl: '',
+});
 
 @Component({
   selector: 'app-admin-campaigns',

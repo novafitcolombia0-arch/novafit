@@ -5,13 +5,35 @@ import { emailConfig } from "./mail";
 export { emailConfig, sendEmail, enqueueEmail } from "./mail";
 export type { EmailMessage, SendResult } from "./mail";
 
-// ---------- Plantillas ----------
+// ---------- Utilidades ----------
 
 const esc = (v: unknown) =>
   String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const money = (n: number) => `$${Math.round(n).toLocaleString("es-CO")} COP`;
-const paragraphs = (text: string) =>
-  esc(text).split(/\n{2,}/).map((p) => `<p style="margin:0 0 14px">${p.replace(/\n/g, "<br>")}</p>`).join("");
+const p = (html: string) => `<p style="margin:0 0 14px">${html}</p>`;
+const paragraphs = (text: string) => esc(text).split(/\n{2,}/).map((t) => p(t.replace(/\n/g, "<br>"))).join("");
+
+/** "Hola, Laura." — si no hay nombre se saluda con el correo */
+const greetingName = (name: string | undefined, email: string | undefined) => (name || "").trim().split(/\s+/)[0] || email || "";
+
+/** Fecha en hora de Colombia: "18 de noviembre de 2026" */
+const fecha = (d: Date | string | null | undefined) =>
+  new Date(d || Date.now()).toLocaleDateString("es-CO", { timeZone: "America/Bogota", day: "numeric", month: "long", year: "numeric" });
+
+/** Bloque de datos tipo "Número de pedido: X" */
+const dataRows = (rows: [string, string][]) =>
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;margin:4px 0 18px">${rows
+    .map(([k, v]) => `<tr><td style="padding:5px 12px 5px 0;color:#696969;white-space:nowrap;vertical-align:top">${esc(k)}:</td><td style="padding:5px 0;vertical-align:top">${v}</td></tr>`)
+    .join("")}</table>`;
+
+const sectionTitle = (t: string) =>
+  `<p style="margin:22px 0 8px;font-size:13px;letter-spacing:2px;font-weight:bold;color:#1e1e1e">${esc(t)}</p>`;
+
+const signature = (lines: string[]) =>
+  `<p style="margin:24px 0 0">${lines.map((l, i) => (i === lines.length - 2 ? `<strong>${esc(l)}</strong>` : esc(l))).join("<br>")}</p>`;
+
+const codeBox = (code: string) =>
+  `<p style="text-align:center;margin:18px 0"><span style="display:inline-block;font-family:monospace;font-size:22px;letter-spacing:2px;border:2px dashed #b59677;border-radius:4px;padding:10px 20px">${esc(code)}</span></p>`;
 
 // El logo se sirve desde la tienda publicada (la de QA pide login de Vercel y no cargaría en el correo)
 const LOGO = "https://novafitmb.com/assets/logo-black.png";
@@ -34,98 +56,188 @@ function layout(opts: { preheader: string; title: string; body: string; button?:
 <h1 style="font-size:22px;line-height:1.3;margin:12px 0 18px;text-align:center">${esc(opts.title)}</h1>
 ${opts.body}${button}
 </td></tr></table>
-<p style="font-size:12px;color:#696969;margin:18px 0 0;line-height:1.6">Nova FIT · Muestra tu mejor versión<br>
+<p style="font-size:12px;color:#696969;margin:18px 0 0;line-height:1.6">NOVA FIT · Muestra tu mejor versión<br>
 WhatsApp +57 318 701 6549 · novafitcolombia0@gmail.com${unsubscribe}</p>
 </td></tr></table></body></html>`;
 }
 
-/** Bienvenida al suscribirse (con el cupón, si había uno activo) */
-export function welcomeEmail(p: { name?: string; code?: string; percent?: number; firstPurchaseOnly?: boolean; unsubscribeUrl: string }) {
+// ---------- 1. Bienvenida (al suscribirse) ----------
+
+export function welcomeEmail(d: { name?: string; email?: string; code?: string; percent?: number; firstPurchaseOnly?: boolean; unsubscribeUrl: string }) {
   const { frontendUrl } = emailConfig();
-  const hello = p.name ? `Hola ${esc(p.name)},` : "Hola,";
-  const codeBlock = p.code
-    ? `<p style="margin:0 0 14px">Aquí tienes tu <strong>${p.percent}% de descuento</strong>${p.firstPurchaseOnly ? " en tu primera compra" : ""}:</p>
-<p style="text-align:center;margin:18px 0"><span style="display:inline-block;font-family:monospace;font-size:22px;letter-spacing:2px;border:2px dashed #b59677;border-radius:4px;padding:10px 20px">${esc(p.code)}</span></p>
-<p style="margin:0 0 14px">Escríbelo en el campo "Código de descuento" al finalizar tu compra.</p>`
+  const who = greetingName(d.name, d.email);
+  // Recordatorio del código que el modal ya mostró (por si cerró la ventana sin copiarlo)
+  const code = d.code
+    ? `${p(`Tu código de bienvenida para obtener <strong>${d.percent}% de descuento</strong>${d.firstPurchaseOnly ? " en tu primera compra" : ""}:`)}${codeBox(d.code)}`
     : "";
   const html = layout({
-    preheader: p.code ? `Tu código de ${p.percent}% está adentro` : "Gracias por suscribirte",
-    title: "¡Bienvenida a Nova FIT!",
-    body: `<p style="margin:0 0 14px">${hello}</p><p style="margin:0 0 14px">Gracias por suscribirte. Serás la primera en enterarte de nuestros lanzamientos y promociones.</p>${codeBlock}`,
-    button: { text: "Shop Now", url: `${frontendUrl}/catalogo` },
-    unsubscribeUrl: p.unsubscribeUrl,
+    preheader: "Ahora haces parte de nuestra comunidad",
+    title: "¡Bienvenida a NOVA FIT! 🤍",
+    body:
+      p(`Hola, ${esc(who)}. Nos alegra mucho tenerte aquí.`) +
+      p("Tu registro en nuestra página web ha sido exitoso. Ahora haces parte de nuestra comunidad, un espacio creado para mujeres que buscan sentirse bien, seguras y mostrar su mejor versión.") +
+      p("A partir de ahora podrás conocer nuestras colecciones, descubrir nuevos lanzamientos y disfrutar de una experiencia de compra más fácil y especial.") +
+      code +
+      p("Gracias por elegirnos y permitirnos acompañarte.") +
+      signature(["NOVA FIT", "Muestra tu mejor versión. 🤍"]),
+    button: { text: "Ver colecciones", url: `${frontendUrl}/catalogo` },
+    unsubscribeUrl: d.unsubscribeUrl,
   });
-  const text = `${p.name ? `Hola ${p.name},` : "Hola,"}\n\nGracias por suscribirte a Nova FIT.${p.code ? `\n\nTu código de ${p.percent}% de descuento${p.firstPurchaseOnly ? " en tu primera compra" : ""}: ${p.code}` : ""}\n\nCompra aquí: ${frontendUrl}/catalogo\n\nDarte de baja: ${p.unsubscribeUrl}`;
-  return { subject: p.code ? `Tu ${p.percent}% de descuento en Nova FIT` : "¡Bienvenida a Nova FIT!", html, text };
+  const text = `¡BIENVENIDA A NOVA FIT! 🤍
+
+Hola, ${who}. Nos alegra mucho tenerte aquí.
+
+Tu registro en nuestra página web ha sido exitoso. Ahora haces parte de nuestra comunidad, un espacio creado para mujeres que buscan sentirse bien, seguras y mostrar su mejor versión.
+
+A partir de ahora podrás conocer nuestras colecciones, descubrir nuevos lanzamientos y disfrutar de una experiencia de compra más fácil y especial.
+${d.code ? `\nTu código de bienvenida (${d.percent}% de descuento${d.firstPurchaseOnly ? " en tu primera compra" : ""}): ${d.code}\n` : ""}
+Gracias por elegirnos y permitirnos acompañarte.
+
+NOVA FIT
+Muestra tu mejor versión. 🤍
+
+Colecciones: ${frontendUrl}/catalogo
+Darte de baja: ${d.unsubscribeUrl}`;
+  return { subject: "¡Bienvenida a NOVA FIT! 🤍", html, text };
 }
 
-function orderLines(order: Order) {
-  const rows = order.items
-    .map((i) => `<tr><td style="padding:6px 0">${i.quantity} × ${esc(i.productName)} <span style="color:#696969">(talla ${esc(i.size)})</span></td><td style="padding:6px 0;text-align:right;white-space:nowrap">${money(i.unitPrice * i.quantity)}</td></tr>`)
-    .join("");
-  const discount = order.discountAmount
-    ? `<tr><td style="padding:4px 0;color:#2f7d32">Descuento ${esc(order.discountCode)}</td><td style="padding:4px 0;text-align:right;color:#2f7d32">−${money(order.discountAmount)}</td></tr>`
-    : "";
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;border-top:1px solid #e6e6e6;border-bottom:1px solid #e6e6e6;margin:8px 0 18px">${rows}
-<tr><td style="padding:8px 0 4px;color:#696969;border-top:1px solid #e6e6e6">Subtotal</td><td style="padding:8px 0 4px;text-align:right;color:#696969;border-top:1px solid #e6e6e6">${money(order.subtotal)}</td></tr>${discount}
-<tr><td style="padding:4px 0;color:#696969">Envío</td><td style="padding:4px 0;text-align:right;color:#696969">${order.shippingCost ? money(order.shippingCost) : "Gratis"}</td></tr>
-<tr><td style="padding:8px 0;font-weight:bold">Total pagado</td><td style="padding:8px 0;text-align:right;font-weight:bold">${money(order.total)}</td></tr></table>`;
-}
+// ---------- 2. Compra exitosa (pago aprobado) ----------
 
-/** Confirmación cuando el pago queda aprobado */
+const productLines = (order: Order) =>
+  order.items.map((i) => `${i.quantity} × ${i.productName} (talla ${i.size})`);
+
 export function paymentEmail(order: Order) {
   const { frontendUrl } = emailConfig();
-  const first = order.customerName.split(" ")[0];
+  const who = greetingName(order.customerName, order.email);
   const url = `${frontendUrl}/pedido/${encodeURIComponent(order.reference)}`;
+  const address = `${order.address}, ${order.city}, ${order.department}`;
   const html = layout({
-    preheader: `Pedido ${order.reference} confirmado`,
-    title: "¡Recibimos tu pago!",
-    body: `<p style="margin:0 0 14px">Hola ${esc(first)}, tu pedido <strong>${esc(order.reference)}</strong> está confirmado y ya lo estamos preparando.</p>
-${orderLines(order)}
-<p style="margin:0 0 6px"><strong>Envío a:</strong></p>
-<p style="margin:0 0 14px;color:#696969">${esc(order.address)}<br>${esc(order.city)}, ${esc(order.department)}</p>
-<p style="margin:0 0 14px">Te escribiremos de nuevo con el número de guía cuando tu pedido salga.</p>`,
+    preheader: `Pedido ${order.reference} recibido`,
+    title: "¡Tu compra fue exitosa! 🤍",
+    body:
+      p(`Hola, ${esc(who)}.`) +
+      p("En NOVA FIT estamos felices de que nos hayas elegido. Tu pedido ha sido recibido correctamente y estamos preparando todo para que disfrutes de tu nueva prenda favorita.") +
+      sectionTitle("RESUMEN DE TU PEDIDO") +
+      dataRows([
+        ["Número de pedido", `<strong>${esc(order.reference)}</strong>`],
+        ["Fecha", esc(fecha(order.paidAt || order.createdAt))],
+        ["Productos", productLines(order).map(esc).join("<br>")],
+        ...(order.discountAmount ? ([["Descuento", `${esc(order.discountCode)} (−${money(order.discountAmount)})`]] as [string, string][]) : []),
+        ["Total pagado", `<strong>${money(order.total)}</strong>`],
+        ["Dirección de envío", esc(address)],
+      ]) +
+      p("Te mantendremos informada sobre el estado de tu pedido y el proceso de envío.") +
+      p("Gracias por confiar en NOVA FIT y permitirnos acompañarte a mostrar tu mejor versión.") +
+      signature(["Con cariño,", "NOVA FIT", "Your season, your moment."]),
     button: { text: "Ver mi pedido", url },
   });
-  const items = order.items.map((i) => `- ${i.quantity} × ${i.productName} (talla ${i.size}): ${money(i.unitPrice * i.quantity)}`).join("\n");
-  const text = `Hola ${first}, recibimos tu pago.\n\nPedido ${order.reference}\n${items}\n${order.discountAmount ? `Descuento ${order.discountCode}: -${money(order.discountAmount)}\n` : ""}Envío: ${order.shippingCost ? money(order.shippingCost) : "Gratis"}\nTotal pagado: ${money(order.total)}\n\nEnvío a: ${order.address}, ${order.city}, ${order.department}\n\nVer pedido: ${url}`;
-  return { subject: `Pago confirmado · Pedido ${order.reference}`, html, text };
+  const text = `Hola, ${who}.
+
+¡Tu compra fue exitosa! 🤍
+
+En NOVA FIT estamos felices de que nos hayas elegido. Tu pedido ha sido recibido correctamente y estamos preparando todo para que disfrutes de tu nueva prenda favorita.
+
+RESUMEN DE TU PEDIDO
+
+Número de pedido: ${order.reference}
+Fecha: ${fecha(order.paidAt || order.createdAt)}
+Productos: ${productLines(order).join("; ")}
+${order.discountAmount ? `Descuento: ${order.discountCode} (−${money(order.discountAmount)})\n` : ""}Total pagado: ${money(order.total)}
+Dirección de envío: ${address}
+
+Te mantendremos informada sobre el estado de tu pedido y el proceso de envío.
+
+Gracias por confiar en NOVA FIT y permitirnos acompañarte a mostrar tu mejor versión.
+
+Con cariño,
+
+NOVA FIT
+Your season, your moment.
+
+Ver pedido: ${url}`;
+  return { subject: `¡Tu compra fue exitosa! 🤍 Pedido ${order.reference}`, html, text };
 }
 
-/** Aviso con el número de guía cuando el pedido sale */
+// ---------- 3. Pedido en camino (número de guía) ----------
+
 export function shippedEmail(order: Order) {
-  const { frontendUrl } = emailConfig();
-  const first = order.customerName.split(" ")[0];
-  const url = `${frontendUrl}/pedido/${encodeURIComponent(order.reference)}`;
+  const who = greetingName(order.customerName, order.email);
+  const tracking = order.trackingUrl
+    ? `<a href="${esc(order.trackingUrl)}" style="color:#1e1e1e">${esc(order.trackingUrl)}</a>`
+    : "";
+  const rows: [string, string][] = [
+    ["Número de pedido", `<strong>${esc(order.reference)}</strong>`],
+    ...(order.carrier ? ([["Transportadora", esc(order.carrier)]] as [string, string][]) : []),
+    ["Número de guía", `<strong style="font-family:monospace;font-size:15px">${esc(order.trackingNumber)}</strong>`],
+    ...(tracking ? ([["Enlace de seguimiento", tracking]] as [string, string][]) : []),
+  ];
   const html = layout({
     preheader: `Guía ${order.trackingNumber}`,
-    title: "¡Tu pedido va en camino!",
-    body: `<p style="margin:0 0 14px">Hola ${esc(first)}, tu pedido <strong>${esc(order.reference)}</strong> ya salió.</p>
-<p style="margin:0 0 6px">Número de guía:</p>
-<p style="text-align:center;margin:12px 0 20px"><span style="display:inline-block;font-family:monospace;font-size:20px;letter-spacing:1px;background:#f8f0e4;border-radius:4px;padding:10px 20px">${esc(order.trackingNumber)}</span></p>
-<p style="margin:0 0 14px">Con este número puedes seguir tu envío en la página de la transportadora. Si tienes cualquier duda, escríbenos por WhatsApp.</p>
-<p style="margin:0 0 14px;color:#696969">Envío a: ${esc(order.address)}, ${esc(order.city)}, ${esc(order.department)}</p>`,
-    button: { text: "Ver mi pedido", url },
+    title: "¡Tu pedido NOVA FIT ya está en camino! 📦",
+    body:
+      p(`Hola, ${esc(who)}.`) +
+      p("¡Tenemos buenas noticias para ti! 🤍") +
+      p("Tu pedido NOVA FIT ya fue despachado y está en camino hacia ti. Esperamos que disfrutes muchísimo tus nuevas prendas y que cada una te haga sentir increíble.") +
+      sectionTitle("INFORMACIÓN DE TU ENVÍO") +
+      dataRows(rows) +
+      p("Te invitamos a realizar el seguimiento de tu paquete para estar al tanto de su recorrido.") +
+      p("Gracias por confiar en NOVA FIT y permitirnos ser parte de tu día a día.") +
+      p("¡Esperamos que ames tu pedido tanto como nosotros amamos crearlo para ti!") +
+      signature(["NOVA FIT", "Muestra tu mejor versión."]),
+    ...(order.trackingUrl ? { button: { text: "Seguir mi envío", url: order.trackingUrl } } : {}),
   });
-  const text = `Hola ${first}, tu pedido ${order.reference} va en camino.\n\nNúmero de guía: ${order.trackingNumber}\n\nEnvío a: ${order.address}, ${order.city}, ${order.department}\n\nVer pedido: ${url}`;
-  return { subject: `Tu pedido ${order.reference} va en camino`, html, text };
+  const text = `¡Tu pedido NOVA FIT ya está en camino! 📦
+
+Hola, ${who}.
+
+¡Tenemos buenas noticias para ti! 🤍
+
+Tu pedido NOVA FIT ya fue despachado y está en camino hacia ti. Esperamos que disfrutes muchísimo tus nuevas prendas y que cada una te haga sentir increíble.
+
+INFORMACIÓN DE TU ENVÍO
+
+Número de pedido: ${order.reference}
+${order.carrier ? `Transportadora: ${order.carrier}\n` : ""}Número de guía: ${order.trackingNumber}
+${order.trackingUrl ? `Enlace de seguimiento: ${order.trackingUrl}\n` : ""}
+Te invitamos a realizar el seguimiento de tu paquete para estar al tanto de su recorrido.
+
+Gracias por confiar en NOVA FIT y permitirnos ser parte de tu día a día.
+
+¡Esperamos que ames tu pedido tanto como nosotros amamos crearlo para ti!
+
+NOVA FIT
+Muestra tu mejor versión.`;
+  return { subject: "¡Tu pedido NOVA FIT ya está en camino! 📦", html, text };
 }
 
-/** Promoción escrita en el panel */
-export function promotionEmail(p: { subject: string; title: string; message: string; code?: string; buttonText?: string; buttonUrl?: string; name?: string; unsubscribeUrl: string }) {
+// ---------- 4. Promoción (redactada en el panel; por defecto el texto de "beneficio exclusivo") ----------
+
+export function promotionEmail(d: {
+  subject: string; title: string; message: string; code?: string; buttonText?: string; buttonUrl?: string;
+  name?: string; email?: string; unsubscribeUrl: string;
+}) {
   const { frontendUrl } = emailConfig();
-  const hello = p.name ? `<p style="margin:0 0 14px">Hola ${esc(p.name)},</p>` : "";
-  const code = p.code
-    ? `<p style="text-align:center;margin:18px 0"><span style="display:inline-block;font-family:monospace;font-size:22px;letter-spacing:2px;border:2px dashed #b59677;border-radius:4px;padding:10px 20px">${esc(p.code)}</span></p>`
-    : "";
-  const buttonUrl = p.buttonUrl || `${frontendUrl}/catalogo`;
+  const who = greetingName(d.name, d.email);
+  const buttonUrl = d.buttonUrl || `${frontendUrl}/catalogo`;
   const html = layout({
-    preheader: p.subject,
-    title: p.title,
-    body: `${hello}${paragraphs(p.message)}${code}`,
-    button: { text: p.buttonText || "Shop Now", url: buttonUrl },
-    unsubscribeUrl: p.unsubscribeUrl,
+    preheader: d.subject,
+    title: d.title,
+    body:
+      (who ? p(`Hola, ${esc(who)}.`) : "") +
+      paragraphs(d.message) +
+      (d.code ? codeBox(d.code) : "") +
+      signature(["NOVA FIT", "Muestra tu mejor versión."]),
+    button: { text: d.buttonText || "Comprar ahora", url: buttonUrl },
+    unsubscribeUrl: d.unsubscribeUrl,
   });
-  const text = `${p.name ? `Hola ${p.name},\n\n` : ""}${p.title}\n\n${p.message}${p.code ? `\n\nCódigo: ${p.code}` : ""}\n\n${p.buttonText || "Shop Now"}: ${buttonUrl}\n\nDarte de baja: ${p.unsubscribeUrl}`;
-  return { subject: p.subject, html, text };
+  const text = `${who ? `Hola, ${who}.\n\n` : ""}${d.title}
+
+${d.message}${d.code ? `\n\nTu código: ${d.code}` : ""}
+
+NOVA FIT
+Muestra tu mejor versión.
+
+${d.buttonText || "Comprar ahora"}: ${buttonUrl}
+Darte de baja: ${d.unsubscribeUrl}`;
+  return { subject: d.subject, html, text };
 }

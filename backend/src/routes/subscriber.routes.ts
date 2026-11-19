@@ -63,6 +63,7 @@ router.post("/", subscribeLimiter, async (req: Request, res: Response) => {
     const url = unsubscribeUrl(req, token);
     const mail = welcomeEmail({
       name: name || subscriber.name,
+      email,
       code: usable ? welcome!.code : undefined,
       percent: welcome?.percent,
       firstPurchaseOnly: welcome?.firstPurchaseOnly,

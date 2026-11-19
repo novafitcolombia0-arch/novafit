@@ -43,6 +43,13 @@ export class Order {
   @Column({ nullable: true })
   trackingNumber: string;
 
+  // Transportadora y enlace de seguimiento (van en el correo "tu pedido va en camino")
+  @Column({ nullable: true })
+  carrier: string;
+
+  @Column({ nullable: true })
+  trackingUrl: string;
+
   // Datos de la clienta
   @Column()
   customerName: string;

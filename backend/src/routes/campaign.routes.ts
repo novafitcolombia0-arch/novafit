@@ -51,7 +51,7 @@ router.post("/test", async (req: AuthRequest, res: Response) => {
   const admin = await AppDataSource.getRepository(User).findOne({ where: { id: req.userId! } });
   const to = clean(req.body?.to, 120).toLowerCase() || admin?.email || "";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return res.status(400).json({ message: "Correo de prueba no válido" });
-  const mail = promotionEmail({ ...parsed.data!, subject: `[PRUEBA] ${parsed.data!.subject}`, unsubscribeUrl: unsubscribeUrl(req, "prueba") });
+  const mail = promotionEmail({ ...parsed.data!, email: to, subject: `[PRUEBA] ${parsed.data!.subject}`, unsubscribeUrl: unsubscribeUrl(req, "prueba") });
   const result = await sendEmail({ to, ...mail, category: "prueba" });
   if (!result.ok) return res.status(result.skipped ? 503 : 502).json({ message: result.skipped ? "El correo no está configurado todavía" : result.error });
   res.json({ message: `Prueba enviada a ${to}` });
@@ -98,7 +98,7 @@ router.post("/", async (req: Request, res: Response) => {
     let failed = 0;
     await Promise.all(recipients.map(async (r) => {
       const url = await r.unsubscribe(base);
-      const mail = promotionEmail({ ...parsed.data!, name: r.name, unsubscribeUrl: url });
+      const mail = promotionEmail({ ...parsed.data!, name: r.name, email: r.email, unsubscribeUrl: url });
       const result = await enqueueEmail({ to: r.email, toName: r.name, ...mail, category: "promocion", unsubscribeUrl: url });
       if (result.ok) sent++; else failed++;
       if ((sent + failed) % 10 === 0) await repo().update(campaign.id, { sent, failed });

@@ -328,17 +328,25 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
   if (!order) return res.status(404).json({ message: "Pedido no encontrado" });
 
   const previousTracking = order.trackingNumber || "";
-  const { fulfillmentStatus, trackingNumber } = req.body || {};
+  const { fulfillmentStatus, trackingNumber, carrier, trackingUrl } = req.body || {};
   const allowed = ["POR_DESPACHAR", "DESPACHADO", "ENTREGADO", "CANCELADO"];
   if (fulfillmentStatus !== undefined) {
     if (!allowed.includes(fulfillmentStatus)) return res.status(400).json({ message: "Estado no válido" });
     order.fulfillmentStatus = fulfillmentStatus;
   }
   if (trackingNumber !== undefined) order.trackingNumber = clean(trackingNumber, 80);
+  if (carrier !== undefined) order.carrier = clean(carrier, 60);
+  if (trackingUrl !== undefined) {
+    const url = clean(trackingUrl, 300);
+    if (url && !/^https:\/\//.test(url)) return res.status(400).json({ message: "El enlace de seguimiento debe empezar por https://" });
+    order.trackingUrl = url;
+  }
 
   await orderRepo().update(order.id, {
     fulfillmentStatus: order.fulfillmentStatus,
     trackingNumber: order.trackingNumber,
+    carrier: order.carrier,
+    trackingUrl: order.trackingUrl,
   });
 
   // Se avisa a la clienta cuando se pone (o cambia) el número de guía de un pedido pagado

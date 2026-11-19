@@ -148,6 +148,8 @@ export interface Order extends OrderSummary {
   id: number;
   fulfillmentStatus: FulfillmentStatus;
   trackingNumber?: string;
+  carrier?: string;
+  trackingUrl?: string;
   email: string;
   phone: string;
   documentId?: string;

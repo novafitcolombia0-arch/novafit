@@ -181,7 +181,7 @@ export class ApiService {
     return this.http.get<Order[]>(`${this.apiUrl}/orders${query}`, this.adminHeaders());
   }
 
-  updateOrder(id: number, data: Partial<Pick<Order, 'fulfillmentStatus' | 'trackingNumber'>>): Observable<Order & { emailSent?: boolean }> {
+  updateOrder(id: number, data: Partial<Pick<Order, 'fulfillmentStatus' | 'trackingNumber' | 'carrier' | 'trackingUrl'>>): Observable<Order & { emailSent?: boolean }> {
     return this.http.patch<Order & { emailSent?: boolean }>(`${this.apiUrl}/orders/${id}`, data, this.adminHeaders());
   }
 
