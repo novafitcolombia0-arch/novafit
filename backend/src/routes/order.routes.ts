@@ -13,7 +13,7 @@ import {
 } from "../services/orders";
 import { evaluateDiscount } from "../services/discounts";
 import { checkoutLimiter } from "../config/security";
-import { sendEmail, shippedEmail } from "../services/email";
+import { emailConfig, enqueueEmail, shippedEmail } from "../services/email";
 
 // Pedidos sin pagar que una misma persona puede tener apartando inventario a la vez
 const MAX_PENDING_PER_EMAIL = 3;
@@ -343,10 +343,11 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
 
   // Se avisa a la clienta cuando se pone (o cambia) el número de guía de un pedido pagado
   const newTracking = order.trackingNumber || "";
+  // Sale por la cola (con reintentos): el panel no espera al proveedor de correo
   let emailSent = false;
-  if (newTracking && newTracking !== previousTracking && order.status === "APPROVED" && order.email) {
-    const result = await sendEmail({ to: order.email, toName: order.customerName, ...shippedEmail(order), category: "envio" });
-    emailSent = result.ok;
+  if (newTracking && newTracking !== previousTracking && order.status === "APPROVED" && order.email && emailConfig().configured) {
+    void enqueueEmail({ to: order.email, toName: order.customerName, ...shippedEmail(order), category: "envio" });
+    emailSent = true;
   }
   res.json({ ...order, emailSent });
 });

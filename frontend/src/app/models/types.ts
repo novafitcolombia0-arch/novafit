@@ -110,6 +110,7 @@ export interface EmailCampaign {
   discountCode?: string;
   buttonText?: string;
   buttonUrl?: string;
+  audience?: 'SUBSCRIBERS' | 'MANUAL';
   status: 'SENDING' | 'SENT';
   recipients: number;
   sent: number;
@@ -119,6 +120,7 @@ export interface EmailCampaign {
 }
 
 export interface CampaignDraft {
+  emails?: string[];
   subject: string;
   title: string;
   message: string;
@@ -129,7 +131,7 @@ export interface CampaignDraft {
 
 export interface CampaignsInfo {
   configured: boolean;
-  provider: 'twilio' | 'sendgrid' | null;
+  provider: string | null;
   from: string | null;
   activeSubscribers: number;
   campaigns: EmailCampaign[];

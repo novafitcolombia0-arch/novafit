@@ -24,6 +24,10 @@ export class EmailCampaign {
   @Column({ nullable: true })
   buttonUrl: string;
 
+  // A quién se envió: los suscriptores activos o una lista de correos escrita a mano
+  @Column({ default: "SUBSCRIBERS" })
+  audience: "SUBSCRIBERS" | "MANUAL";
+
   // SENDING mientras se envía; SENT al terminar
   @Column({ default: "SENDING" })
   status: "SENDING" | "SENT";

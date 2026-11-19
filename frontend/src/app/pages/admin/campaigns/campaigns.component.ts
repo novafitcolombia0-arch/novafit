@@ -15,8 +15,8 @@ const emptyDraft = (): CampaignDraft => ({ subject: '', title: '', message: '', 
 
       @if (info && !info.configured) {
         <div class="bg-yellow-50 text-yellow-800 p-4 rounded mb-6 text-sm">
-          El envío de correos todavía no está configurado. Falta la llave de Brevo en el servidor
-          (BREVO_API_KEY y EMAIL_FROM). Puedes preparar la promoción, pero no se enviará.
+          El envío de correos todavía no está configurado. Falta la llave de Resend en el servidor
+          (RESEND_API_KEY y EMAIL_FROM). Puedes preparar la promoción, pero no se enviará.
         </div>
       }
       @if (message) { <div class="bg-green-50 text-green-700 p-3 rounded mb-4 text-sm">{{ message }}</div> }
@@ -65,11 +65,29 @@ const emptyDraft = (): CampaignDraft => ({ subject: '', title: '', message: '', 
                 Enviar prueba
               </button>
             </div>
-            <button type="submit" [disabled]="busy || !valid || !info?.configured || !info?.activeSubscribers || sending"
+            <!-- A quién -->
+            <fieldset class="pt-3 border-t border-nova-blush">
+              <legend class="block text-nova-gray mb-2">Enviar a</legend>
+              <div class="flex flex-wrap gap-4 mb-2">
+                <label class="flex items-center gap-2"><input type="radio" name="audience" value="SUBSCRIBERS" [(ngModel)]="audience">
+                  Todos los suscriptores ({{ info?.activeSubscribers ?? 0 }})</label>
+                <label class="flex items-center gap-2"><input type="radio" name="audience" value="MANUAL" [(ngModel)]="audience"> Estos correos</label>
+              </div>
+              @if (audience === 'MANUAL') {
+                <textarea [(ngModel)]="manualEmails" name="manualEmails" rows="4"
+                          placeholder="Pega los correos separados por comas, espacios o en líneas" class="input"></textarea>
+                <p class="text-xs mt-1" [class.text-red-600]="manualInvalid.length || manualList.length > 100" [class.text-nova-gray]="!manualInvalid.length && manualList.length <= 100">
+                  {{ manualList.length }} correo(s){{ manualInvalid.length ? ' · no válidos: ' + manualInvalid.slice(0, 3).join(', ') : '' }}{{ manualList.length > 100 ? ' · máximo 100 por envío' : '' }}
+                </p>
+              }
+            </fieldset>
+
+            <button type="submit" [disabled]="busy || !valid || !info?.configured || !canSend || sending"
                     class="w-full bg-nova-dark text-white px-4 py-3 rounded uppercase tracking-wider hover:bg-nova-black transition disabled:opacity-40">
-              {{ sending ? 'Enviando promoción…' : 'Enviar a ' + (info?.activeSubscribers ?? 0) + ' suscriptores' }}
+              {{ sending ? 'Enviando promoción…' : 'Enviar a ' + recipientCount + (audience === 'MANUAL' ? ' correo(s)' : ' suscriptores') }}
             </button>
-            <p class="text-xs text-nova-gray">Solo se envía a suscriptores activos. Cada correo incluye un enlace para darse de baja.</p>
+            <p class="text-xs text-nova-gray">Cada correo incluye un enlace para darse de baja; a quien se dé de baja no se le vuelve a escribir.
+              Envía solo a personas que aceptaron recibir tus correos.</p>
           </form>
         </section>
 
@@ -98,6 +116,7 @@ const emptyDraft = (): CampaignDraft => ({ subject: '', title: '', message: '', 
             <tr>
               <th class="px-3 py-2.5 font-semibold">Fecha</th>
               <th class="px-3 py-2.5 font-semibold">Asunto</th>
+              <th class="px-3 py-2.5 font-semibold">Para</th>
               <th class="px-3 py-2.5 font-semibold text-center">Destinatarios</th>
               <th class="px-3 py-2.5 font-semibold text-center">Enviados</th>
               <th class="px-3 py-2.5 font-semibold text-center">Fallidos</th>
@@ -106,12 +125,13 @@ const emptyDraft = (): CampaignDraft => ({ subject: '', title: '', message: '', 
           </thead>
           <tbody>
             @if (!info?.campaigns?.length) {
-              <tr><td colspan="6" class="px-3 py-10 text-center text-nova-gray">Todavía no has enviado promociones.</td></tr>
+              <tr><td colspan="7" class="px-3 py-10 text-center text-nova-gray">Todavía no has enviado promociones.</td></tr>
             }
             @for (c of info?.campaigns || []; track c.id) {
               <tr class="border-t border-nova-blush">
                 <td class="px-3 py-2.5 text-nova-gray whitespace-nowrap">{{ c.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
                 <td class="px-3 py-2.5 text-nova-dark">{{ c.subject }}</td>
+                <td class="px-3 py-2.5 text-nova-gray whitespace-nowrap">{{ c.audience === 'MANUAL' ? 'Lista propia' : 'Suscriptores' }}</td>
                 <td class="px-3 py-2.5 text-center text-nova-gray">{{ c.recipients }}</td>
                 <td class="px-3 py-2.5 text-center text-green-700">{{ c.sent }}</td>
                 <td class="px-3 py-2.5 text-center" [class.text-red-600]="c.failed > 0">{{ c.failed }}</td>
@@ -135,6 +155,8 @@ export class AdminCampaignsComponent implements OnInit, OnDestroy {
   info: CampaignsInfo | null = null;
   draft = emptyDraft();
   testTo = '';
+  audience: 'SUBSCRIBERS' | 'MANUAL' = 'SUBSCRIBERS';
+  manualEmails = '';
   busy = false;
   message = '';
   error = '';
@@ -144,6 +166,18 @@ export class AdminCampaignsComponent implements OnInit, OnDestroy {
 
   ngOnInit() { this.load(); }
   ngOnDestroy() { this.stopPolling(); }
+
+  /** Correos escritos a mano: separados por comas, punto y coma, espacios o saltos de línea */
+  get manualList(): string[] {
+    return [...new Set(this.manualEmails.split(/[\s,;]+/).map(e => e.trim().toLowerCase()).filter(Boolean))];
+  }
+  get manualInvalid(): string[] { return this.manualList.filter(e => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)); }
+  get recipientCount() { return this.audience === 'MANUAL' ? this.manualList.length : (this.info?.activeSubscribers ?? 0); }
+  get canSend() {
+    return this.audience === 'MANUAL'
+      ? this.manualList.length > 0 && this.manualList.length <= 100 && this.manualInvalid.length === 0
+      : (this.info?.activeSubscribers ?? 0) > 0;
+  }
 
   get valid() { return !!(this.draft.subject.trim() && this.draft.title.trim() && this.draft.message.trim()); }
   get sending() { return !!this.info?.campaigns.some(c => c.status === 'SENDING'); }
@@ -180,11 +214,19 @@ export class AdminCampaignsComponent implements OnInit, OnDestroy {
   }
 
   send() {
-    const n = this.info?.activeSubscribers ?? 0;
-    if (!confirm(`¿Enviar "${this.draft.subject}" a ${n} suscriptores? No se puede deshacer.`)) return;
+    const manual = this.audience === 'MANUAL';
+    const n = this.recipientCount;
+    const who = manual ? `${n} correo(s)` : `${n} suscriptores`;
+    if (!confirm(`¿Enviar "${this.draft.subject}" a ${who}? No se puede deshacer.`)) return;
     this.busy = true; this.message = ''; this.error = '';
-    this.api.sendCampaign(this.payload()).subscribe({
-      next: () => { this.busy = false; this.message = `Enviando la promoción a ${n} suscriptores…`; this.draft = emptyDraft(); this.load(); },
+    this.api.sendCampaign({ ...this.payload(), ...(manual ? { emails: this.manualList } : {}) }).subscribe({
+      next: () => {
+        this.busy = false;
+        this.message = `Enviando la promoción a ${who}…`;
+        this.draft = emptyDraft();
+        this.manualEmails = '';
+        this.load();
+      },
       error: e => { this.busy = false; this.error = e?.error?.message || 'No se pudo enviar la promoción'; },
     });
   }

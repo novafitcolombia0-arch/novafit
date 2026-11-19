@@ -5,7 +5,7 @@ import { Order, OrderItem } from "../entities";
 import { changeStock } from "./inventory";
 import { WompiTransaction } from "./wompi";
 import { markDiscountUsed } from "./discounts";
-import { paymentEmail, sendEmail } from "./email";
+import { enqueueEmail, paymentEmail } from "./email";
 
 // Minutos que se aparta el inventario mientras la clienta paga.
 // Si no paga en ese tiempo, el pedido pasa a EXPIRED y las prendas vuelven a la tienda.
@@ -154,7 +154,7 @@ export async function applyTransaction(tx: WompiTransaction): Promise<Order | nu
   // Solo la primera vez que pasa a pagado (el webhook y la redirección pueden llegar los dos)
   if (approvedNow && result?.email) {
     const mail = paymentEmail(result);
-    sendEmail({ to: result.email, toName: result.customerName, ...mail, category: "pago" }).catch(() => {});
+    void enqueueEmail({ to: result.email, toName: result.customerName, ...mail, category: "pago" });
   }
   return result;
 }

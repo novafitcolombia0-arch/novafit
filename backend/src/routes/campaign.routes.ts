@@ -3,8 +3,13 @@ import { createRouter } from "../middleware/errors";
 import { AppDataSource } from "../config/data-source";
 import { EmailCampaign, Subscriber, User } from "../entities";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
-import { emailConfig, promotionEmail, sendEmail } from "../services/email";
-import { ensureUnsubscribeToken, unsubscribeUrl } from "./subscriber.routes";
+import { emailConfig, enqueueEmail, promotionEmail, sendEmail } from "../services/email";
+import { ensureUnsubscribeToken, manualUnsubscribeUrl, unsubscribeUrl } from "./subscriber.routes";
+import { In } from "typeorm";
+
+// Tope por envío manual (el plan gratis de Resend permite 100 correos al día)
+const MAX_MANUAL = 100;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const router = createRouter();
 const repo = () => AppDataSource.getRepository(EmailCampaign);
@@ -52,7 +57,11 @@ router.post("/test", async (req: AuthRequest, res: Response) => {
   res.json({ message: `Prueba enviada a ${to}` });
 });
 
-/** Enviar la promoción a todos los suscriptores activos (en segundo plano) */
+/**
+ * Enviar la promoción (en segundo plano, por la cola de correos con reintentos):
+ *  - sin "emails": a todos los suscriptores activos
+ *  - con "emails": a esa lista escrita a mano (se omiten quienes se dieron de baja)
+ */
 router.post("/", async (req: Request, res: Response) => {
   if (!emailConfig().configured) return res.status(503).json({ message: "El correo no está configurado todavía" });
   const parsed = readCampaign(req.body);
@@ -61,28 +70,39 @@ router.post("/", async (req: Request, res: Response) => {
     return res.status(409).json({ message: "Ya hay una promoción enviándose. Espera a que termine." });
   }
 
-  const subscribers = await AppDataSource.getRepository(Subscriber).find({ where: { unsubscribed: false } });
-  if (!subscribers.length) return res.status(400).json({ message: "No hay suscriptores activos" });
+  const subRepo = AppDataSource.getRepository(Subscriber);
+  const manual = Array.isArray(req.body?.emails);
+  let recipients: { email: string; name?: string; unsubscribe: (base: any) => Promise<string> }[];
 
-  const campaign = await repo().save(repo().create({ ...parsed.data!, status: "SENDING", recipients: subscribers.length }));
+  if (manual) {
+    const list = [...new Set((req.body.emails as unknown[]).map((e) => String(e ?? "").trim().toLowerCase()).filter(Boolean))];
+    const invalid = list.filter((e) => !EMAIL_RE.test(e));
+    if (invalid.length) return res.status(400).json({ message: `Correos no válidos: ${invalid.slice(0, 5).join(", ")}` });
+    if (!list.length) return res.status(400).json({ message: "Escribe al menos un correo" });
+    if (list.length > MAX_MANUAL) return res.status(400).json({ message: `Máximo ${MAX_MANUAL} correos por envío` });
+    const optedOut = new Set((await subRepo.find({ where: { email: In(list), unsubscribed: true }, select: ["email"] })).map((s) => s.email));
+    recipients = list.filter((e) => !optedOut.has(e)).map((email) => ({ email, unsubscribe: async (base) => manualUnsubscribeUrl(base, email) }));
+    if (!recipients.length) return res.status(400).json({ message: "Todas esas personas se dieron de baja de los correos" });
+  } else {
+    const subscribers = await subRepo.find({ where: { unsubscribed: false } });
+    if (!subscribers.length) return res.status(400).json({ message: "No hay suscriptores activos" });
+    recipients = subscribers.map((s) => ({ email: s.email, name: s.name, unsubscribe: async (base) => unsubscribeUrl(base, await ensureUnsubscribeToken(s)) }));
+  }
+
+  const campaign = await repo().save(repo().create({ ...parsed.data!, audience: manual ? "MANUAL" : "SUBSCRIBERS", status: "SENDING", recipients: recipients.length }));
   res.status(202).json(campaign);
 
-  // Envío en segundo plano, de a 5 a la vez, para no saturar el proveedor
   const base = { protocol: req.protocol, host: req.get("host") };
   (async () => {
     let sent = 0;
     let failed = 0;
-    const queue = [...subscribers];
-    const worker = async () => {
-      for (let s = queue.shift(); s; s = queue.shift()) {
-        const token = await ensureUnsubscribeToken(s);
-        const mail = promotionEmail({ ...parsed.data!, name: s.name, unsubscribeUrl: unsubscribeUrl(base, token) });
-        const result = await sendEmail({ to: s.email, toName: s.name, ...mail, category: "promocion", unsubscribeUrl: unsubscribeUrl(base, token) });
-        if (result.ok) sent++; else failed++;
-        if ((sent + failed) % 20 === 0) await repo().update(campaign.id, { sent, failed });
-      }
-    };
-    await Promise.all(Array.from({ length: 5 }, worker));
+    await Promise.all(recipients.map(async (r) => {
+      const url = await r.unsubscribe(base);
+      const mail = promotionEmail({ ...parsed.data!, name: r.name, unsubscribeUrl: url });
+      const result = await enqueueEmail({ to: r.email, toName: r.name, ...mail, category: "promocion", unsubscribeUrl: url });
+      if (result.ok) sent++; else failed++;
+      if ((sent + failed) % 10 === 0) await repo().update(campaign.id, { sent, failed });
+    }));
     await repo().update(campaign.id, { sent, failed, status: "SENT", finishedAt: new Date() });
   })().catch(async (err) => {
     console.error("[promoción] error:", err?.message);

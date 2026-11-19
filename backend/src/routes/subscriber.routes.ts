@@ -5,7 +5,8 @@ import { AppDataSource } from "../config/data-source";
 import { DiscountCode, Subscriber } from "../entities";
 import { authMiddleware } from "../middleware/auth";
 import { subscribeLimiter } from "../config/security";
-import { sendEmail, welcomeEmail } from "../services/email";
+import { enqueueEmail, welcomeEmail } from "../services/email";
+import { jwtSecret } from "../config/security";
 
 const router = createRouter();
 const repo = () => AppDataSource.getRepository(Subscriber);
@@ -19,10 +20,19 @@ export async function ensureUnsubscribeToken(s: Subscriber) {
   return token;
 }
 
-/** Enlace "darme de baja" (lo sirve este mismo backend) */
-export function unsubscribeUrl(req: { protocol: string; get?: (h: string) => string | undefined; host?: string }, token: string) {
-  const host = typeof req.get === "function" ? req.get("host") : req.host;
-  return `${req.protocol}://${host}/api/subscribers/unsubscribe?token=${encodeURIComponent(token)}`;
+type BaseUrl = { protocol: string; get?: (h: string) => string | undefined; host?: string };
+const apiBase = (req: BaseUrl) => `${req.protocol}://${typeof req.get === "function" ? req.get("host") : req.host}/api/subscribers/unsubscribe`;
+
+/** Enlace "darme de baja" de un suscriptor (lo sirve este mismo backend) */
+export function unsubscribeUrl(req: BaseUrl, token: string) {
+  return `${apiBase(req)}?token=${encodeURIComponent(token)}`;
+}
+
+/** Firma del enlace de baja para correos escritos a mano (personas que no están en la lista) */
+const emailSignature = (email: string) => crypto.createHmac("sha256", jwtSecret()).update(`baja:${email}`).digest("base64url");
+
+export function manualUnsubscribeUrl(req: BaseUrl, email: string) {
+  return `${apiBase(req)}?e=${encodeURIComponent(email)}&sig=${emailSignature(email)}`;
 }
 
 /** Pública: suscribirse desde el modal y recibir el código de bienvenida */
@@ -58,7 +68,7 @@ router.post("/", subscribeLimiter, async (req: Request, res: Response) => {
       firstPurchaseOnly: welcome?.firstPurchaseOnly,
       unsubscribeUrl: url,
     });
-    sendEmail({ to: email, toName: name, ...mail, category: "bienvenida", unsubscribeUrl: url }).catch(() => {});
+    void enqueueEmail({ to: email, toName: name, ...mail, category: "bienvenida", unsubscribeUrl: url });
   }
 
   res.status(isNew ? 201 : 200).json(
@@ -75,7 +85,20 @@ const page = (title: string, text: string) => `<!doctype html><html lang="es"><h
 <a href="https://novafitmb.com" style="display:inline-block;margin-top:12px;background:#1e1e1e;color:#fff;text-decoration:none;padding:12px 28px;border-radius:4px">Ir a la tienda</a>
 </div></body></html>`;
 
-async function unsubscribe(token: string) {
+async function unsubscribe(query: Record<string, unknown>) {
+  const token = String(query.token ?? "");
+  // Enlace firmado de un correo escrito a mano: se registra la baja aunque no estuviera en la lista
+  const email = String(query.e ?? "").trim().toLowerCase();
+  const sig = String(query.sig ?? "");
+  if (email && sig) {
+    const expected = Buffer.from(emailSignature(email));
+    const given = Buffer.from(sig);
+    if (expected.length !== given.length || !crypto.timingSafeEqual(expected, given)) return false;
+    const s = await repo().findOne({ where: { email } });
+    if (s) { if (!s.unsubscribed) await repo().update(s.id, { unsubscribed: true, unsubscribedAt: new Date() }); }
+    else await repo().save(repo().create({ email, unsubscribed: true, unsubscribedAt: new Date() }));
+    return true;
+  }
   if (!token || token === "prueba") return false;
   const s = await repo().findOne({ where: { unsubscribeToken: token } });
   if (!s) return false;
@@ -85,7 +108,7 @@ async function unsubscribe(token: string) {
 
 /** Pública: enlace "darme de baja" de los correos */
 router.get("/unsubscribe", async (req: Request, res: Response) => {
-  const ok = await unsubscribe(String(req.query.token ?? ""));
+  const ok = await unsubscribe(req.query);
   res.status(ok ? 200 : 404).type("html").send(
     ok
       ? page("Listo, te diste de baja", "No te enviaremos más correos de promociones. Si fue un error, puedes volver a suscribirte desde la tienda.")
@@ -95,7 +118,7 @@ router.get("/unsubscribe", async (req: Request, res: Response) => {
 
 /** Baja con un clic desde Gmail/Outlook (cabecera List-Unsubscribe-Post) */
 router.post("/unsubscribe", async (req: Request, res: Response) => {
-  const ok = await unsubscribe(String(req.query.token ?? ""));
+  const ok = await unsubscribe(req.query);
   res.status(ok ? 200 : 404).json({ unsubscribed: ok });
 });
 
