@@ -3,10 +3,11 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
 import { AuthService } from '../../../services/auth.service';
 import { compressImage } from '../../../services/image-compress';
+import { AdminUsersComponent } from '../users/users.component';
 
 @Component({
     selector: 'app-admin-settings',
-    imports: [FormsModule],
+    imports: [FormsModule, AdminUsersComponent],
     template: `
     <div class="max-w-4xl">
       <h1 class="font-display text-3xl font-bold mb-8 text-nova-dark">Configuración del Sitio</h1>
@@ -108,6 +109,11 @@ import { compressImage } from '../../../services/image-compress';
             @if (pw.confirm && pw.next !== pw.confirm) { <span class="text-xs text-red-600 ml-3">Las contraseñas no coinciden</span> }
           </div>
         </form>
+      </div>
+
+      <!-- Usuarios del panel (lo mismo que en Ajustes → Usuarios) -->
+      <div id="usuarios" class="mt-8">
+        <app-admin-users [embedded]="true" />
       </div>
     </div>
   `

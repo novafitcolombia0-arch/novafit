@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
@@ -15,7 +15,11 @@ const ROLE_LABELS: Record<Role, string> = {
   imports: [FormsModule, DatePipe],
   template: `
     <div class="w-full max-w-4xl">
-      <h1 class="font-display text-3xl font-bold text-nova-dark mb-2">Usuarios</h1>
+      @if (embedded) {
+        <h2 class="font-semibold text-lg text-nova-dark mb-2">Usuarios del panel</h2>
+      } @else {
+        <h1 class="font-display text-3xl font-bold text-nova-dark mb-2">Usuarios</h1>
+      }
       <p class="text-sm text-nova-gray mb-6">Quién puede entrar al panel. El usuario de <strong>Finanzas</strong> solo ve la sección de Finanzas (resumen, ventas, gastos, costos y cierres) y puede descargar el Excel, pero no registra ni anula ventas, ni cambia gastos, precios o costos.</p>
 
       @if (error) { <div class="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{{ error }}</div> }
@@ -92,6 +96,8 @@ const ROLE_LABELS: Record<Role, string> = {
   styles: [`.inp { @apply w-full border border-nova-blush rounded px-3 py-2 bg-white focus:outline-none focus:border-nova-rose; }`],
 })
 export class AdminUsersComponent implements OnInit {
+  /** true cuando se muestra dentro de Configuración (título más pequeño) */
+  @Input() embedded = false;
   users: User[] = [];
   form = { email: '', password: '', role: 'finanzas' as Role };
   saving = false;
