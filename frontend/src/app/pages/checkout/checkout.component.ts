@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CartService } from '../../services/cart.service';
+import { CartItem } from '../../models/types';
 import { ApiService } from '../../services/api.service';
 import { WELCOME_CODE_KEY } from '../../shared/welcome-modal/welcome-modal.component';
 
@@ -75,11 +76,25 @@ const DEPARTMENTS = [
         <div class="border border-nova-blush rounded-lg p-5 h-fit">
           <h2 class="font-semibold text-nova-dark mb-4">Tu pedido</h2>
           @for (item of cart.items(); track item.productId + '|' + (item.color || '') + '|' + item.size) {
-            <div class="flex justify-between gap-2 text-sm text-nova-gray mb-2">
-              <span class="truncate">{{ item.quantity }} × {{ item.name }} ({{ variant(item) }})</span>
-              <span class="shrink-0">{{ item.price * item.quantity | currency:'COP':'$':'1.0-0' }}</span>
+            <div class="text-sm text-nova-gray mb-3">
+              <div class="flex justify-between gap-2">
+                <span class="truncate text-nova-dark">{{ item.name }} <span class="text-nova-gray">({{ variant(item) }})</span></span>
+                <span class="shrink-0">{{ item.price * item.quantity | currency:'COP':'$':'1.0-0' }}</span>
+              </div>
+              <div class="flex items-center justify-between mt-1">
+                <div class="flex items-center border border-nova-blush rounded">
+                  <button type="button" (click)="changeQty(item, item.quantity - 1)" [disabled]="item.quantity <= 1 || loading"
+                          aria-label="Quitar una unidad" class="w-7 h-7 hover:bg-nova-pink disabled:opacity-30">−</button>
+                  <span class="w-7 text-center text-nova-dark">{{ item.quantity }}</span>
+                  <button type="button" (click)="changeQty(item, item.quantity + 1)" [disabled]="item.quantity >= item.maxQuantity || loading"
+                          aria-label="Agregar una unidad" class="w-7 h-7 hover:bg-nova-pink disabled:opacity-30">+</button>
+                </div>
+                <button type="button" (click)="removeItem(item)" [disabled]="loading"
+                        class="text-xs underline hover:text-red-600 disabled:opacity-40">Eliminar</button>
+              </div>
             </div>
           }
+          <a routerLink="/catalogo" class="inline-block text-xs text-nova-dark underline mb-1">+ Agregar más prendas</a>
           <!-- Código de descuento -->
           <div class="border-t border-nova-blush pt-3 mt-3 mb-3">
             @if (applied()) {
@@ -182,6 +197,17 @@ export class CheckoutComponent implements OnInit {
       this.shippingCost.set(parseInt(s['shippingCost'] || '0', 10) || 0);
       this.freeFrom.set(parseInt(s['freeShippingFrom'] || '0', 10) || 0);
     });
+  }
+
+  changeQty(item: CartItem, quantity: number) {
+    this.cart.setQuantity(item, quantity);
+    this.error = '';
+  }
+
+  removeItem(item: CartItem) {
+    this.cart.remove(item);
+    this.error = '';
+    if (this.cart.items().length === 0) this.router.navigate(['/carrito']);
   }
 
   applyDiscount() {
