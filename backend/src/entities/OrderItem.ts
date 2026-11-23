@@ -24,6 +24,10 @@ export class OrderItem {
   @Column()
   size: string;
 
+  // Color comprado ("" si la prenda no maneja colores)
+  @Column({ default: "" })
+  color: string;
+
   @Column({ type: "int" })
   unitPrice: number;
 

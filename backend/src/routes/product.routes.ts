@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { createRouter } from "../middleware/errors";
 import { AppDataSource } from "../config/data-source";
-import { Product, ProductImage, ProductSize } from "../entities";
+import { ONE_SIZE, Product, ProductColor, ProductImage, ProductSize } from "../entities";
 import { logMovement } from "../services/inventory";
 import { isDataUrl, withImageUrls } from "./image.routes";
 import { authMiddleware } from "../middleware/auth";
@@ -54,9 +54,54 @@ router.get("/:slug", async (req: Request, res: Response) => {
   res.json(withImageUrls(req, product));
 });
 
+// ---------- Colores, variantes (color + talla) y fotos ----------
+
+const MAX_COLORS = 12;
+
+/** Colores que manda el panel: nombre (obligatorio) y tono para el circulito de la tienda */
+function parseColors(raw: unknown): ProductColor[] {
+  if (!Array.isArray(raw)) return [];
+  const colors: ProductColor[] = [];
+  for (const c of raw) {
+    const name = String(c?.name ?? "").trim().slice(0, 30);
+    const hex = /^#[0-9a-f]{6}$/i.test(String(c?.hex ?? "")) ? String(c.hex).toLowerCase() : "#cccccc";
+    if (name && !colors.some((x) => x.name.toLowerCase() === name.toLowerCase())) colors.push({ name, hex });
+  }
+  return colors.slice(0, MAX_COLORS);
+}
+
+interface Variant { color: string; size: string; stock: number }
+const variantKey = (v: { color?: string | null; size: string }) => `${v.color || ""}|${v.size}`;
+const variantLabel = (v: { color?: string | null; size: string }) => (v.color ? `${v.color} talla ${v.size}` : `Talla ${v.size}`);
+
+/**
+ * Variantes que manda el panel. Si la prenda maneja colores, cada variante debe ser de uno
+ * de sus colores. Sin tallas, la prenda queda como "Talla única" (una por color).
+ */
+function parseVariants(raw: unknown, colors: ProductColor[]): Variant[] {
+  const names = colors.map((c) => c.name);
+  const variants = new Map<string, Variant>();
+  for (const v of Array.isArray(raw) ? raw : []) {
+    const size = String(v?.size ?? "").trim().slice(0, 20);
+    const color = names.find((n) => n.toLowerCase() === String(v?.color ?? "").trim().toLowerCase()) || "";
+    if (!size || (names.length && !color)) continue;
+    const variant = { color, size, stock: Math.max(0, parseInt(v?.stock, 10) || 0) };
+    if (!variants.has(variantKey(variant))) variants.set(variantKey(variant), variant);
+  }
+  if (!variants.size) {
+    for (const color of names.length ? names : [""]) {
+      variants.set(variantKey({ color, size: ONE_SIZE }), { color, size: ONE_SIZE, stock: 0 });
+    }
+  }
+  return [...variants.values()];
+}
+
+/** Color de una foto: uno de los colores de la prenda, o "" (se ve con todos) */
+const imageColor = (raw: unknown, colors: ProductColor[]) =>
+  colors.find((c) => c.name.toLowerCase() === String(raw ?? "").trim().toLowerCase())?.name || "";
+
 router.post("/", authMiddleware, async (req: Request, res: Response) => {
-  const { name, slug, description, price, cost, categoryId, images, sizes, isActive } =
-    req.body;
+  const { name, slug, description, price, cost, categoryId, images, isActive } = req.body;
   if (!name || !slug || !price || !categoryId) {
     return res
       .status(400)
@@ -67,6 +112,8 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
   if (exists)
     return res.status(400).json({ message: "Ya existe un producto con ese slug" });
 
+  const colors = parseColors(req.body.colors);
+  const variants = parseVariants(req.body.sizes, colors);
   const product = productRepo().create({
     name,
     slug,
@@ -74,9 +121,12 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
     price,
     cost: cost === undefined || cost === null || cost === "" ? null : Math.max(0, Math.round(Number(cost))),
     categoryId,
+    colors,
     isActive: isActive ?? true,
-    images: (images || []).filter((img: any) => isDataUrl(img.imageData)),
-    sizes: sizes || [],
+    images: (images || [])
+      .filter((img: any) => isDataUrl(img.imageData))
+      .map((img: any) => ({ imageData: img.imageData, mimeType: img.mimeType, isMain: !!img.isMain, color: imageColor(img.color, colors) })),
+    sizes: variants as ProductSize[],
   });
   await productRepo().save(product);
 
@@ -86,6 +136,7 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
       await logMovement(AppDataSource.manager, {
         productId: product.id,
         productName: product.name,
+        color: sz.color,
         size: sz.size,
         type: "CREACION",
         quantity: sz.stock,
@@ -113,6 +164,8 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response) => {
   if (cost !== undefined) {
     product.cost = cost === null || cost === "" ? null : Math.max(0, Math.round(Number(cost)));
   }
+  if (req.body.colors !== undefined) product.colors = parseColors(req.body.colors);
+  const colors = product.colors || [];
 
   if (images) {
     // El panel reenvía las imágenes existentes solo con su URL: se recuperan sus datos
@@ -124,57 +177,57 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response) => {
       .getMany();
     const kept = images
       .map((img: any) => {
-        if (isDataUrl(img.imageData)) return { imageData: img.imageData, mimeType: img.mimeType, isMain: !!img.isMain };
+        const extra = { isMain: !!img.isMain, color: imageColor(img.color, colors) };
+        if (isDataUrl(img.imageData)) return { imageData: img.imageData, mimeType: img.mimeType, ...extra };
         const old = stored.find((s) => s.id === img.id);
-        return old && { imageData: old.imageData, mimeType: old.mimeType, isMain: !!img.isMain };
+        return old && { imageData: old.imageData, mimeType: old.mimeType, ...extra };
       })
       .filter(Boolean);
     await imageRepo.delete({ productId: product.id });
     product.images = kept.map((img: any) => imageRepo.create({ ...img, productId: product.id }));
   }
 
-  if (Array.isArray(sizes)) {
-    // Las tallas que ya existen conservan su stock real (se maneja desde Inventario y lo
-    // descuentan las ventas web); aquí solo se agregan tallas nuevas o se quitan.
+  if (Array.isArray(sizes) || req.body.colors !== undefined) {
+    // Las variantes que ya existen conservan su stock real (se maneja desde Inventario y lo
+    // descuentan las ventas web); aquí solo se agregan variantes nuevas o se quitan.
+    const incoming = parseVariants(Array.isArray(sizes) ? sizes : product.sizes, colors);
     await AppDataSource.transaction(async (manager) => {
       const current = await manager.find(ProductSize, {
         where: { productId: product.id },
         loadEagerRelations: false,
       });
-      const incoming = new Map<string, number>();
-      for (const sz of sizes) {
-        const name = String(sz?.size || "").trim();
-        if (name && !incoming.has(name)) incoming.set(name, Math.max(0, parseInt(sz?.stock, 10) || 0));
-      }
+      const incomingKeys = new Set(incoming.map(variantKey));
 
       for (const row of current) {
-        if (incoming.has(row.size)) continue;
+        if (incomingKeys.has(variantKey(row))) continue;
         await manager.delete(ProductSize, row.id);
         if (row.stock > 0) {
           await logMovement(manager, {
             productId: product.id,
             productName: product.name,
+            color: row.color,
             size: row.size,
             type: "ELIMINACION",
             quantity: -row.stock,
             stockAfter: 0,
-            note: "Talla eliminada del producto",
+            note: `${variantLabel(row)} eliminada del producto`,
           });
         }
       }
 
-      for (const [size, stock] of incoming) {
-        if (current.some((row) => row.size === size)) continue;
-        await manager.insert(ProductSize, { productId: product.id, size, stock });
-        if (stock > 0) {
+      for (const v of incoming) {
+        if (current.some((row) => variantKey(row) === variantKey(v))) continue;
+        await manager.insert(ProductSize, { productId: product.id, color: v.color, size: v.size, stock: v.stock });
+        if (v.stock > 0) {
           await logMovement(manager, {
             productId: product.id,
             productName: product.name,
-            size,
+            color: v.color,
+            size: v.size,
             type: "CREACION",
-            quantity: stock,
-            stockAfter: stock,
-            note: "Talla nueva",
+            quantity: v.stock,
+            stockAfter: v.stock,
+            note: v.color ? "Color o talla nueva" : "Talla nueva",
           });
         }
       }

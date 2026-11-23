@@ -1,7 +1,8 @@
-import { Component, Input, OnChanges } from '@angular/core';
+import { Component, Input, OnChanges, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { AuthService } from '../../../services/auth.service';
 import { Expense, FinanceRange } from '../../../models/types';
 import { EXPENSE_LABELS, label, money } from './finance-format';
 
@@ -13,6 +14,7 @@ const today = () => new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 1
     template: `
     @if (error) { <div class="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{{ error }}</div> }
 
+    @if (canEdit) {
     <div class="bg-white border border-nova-blush rounded-lg p-5 mb-6">
       <h3 class="font-semibold text-nova-dark mb-1">{{ editingId ? 'Editar gasto' : 'Registrar gasto' }}</h3>
       <p class="text-xs text-nova-gray mb-4">Todo lo que sale de la caja y no es el costo de las prendas: pauta en Meta, envíos que pagas tú, bolsas y empaques, plataformas, etc.</p>
@@ -34,6 +36,7 @@ const today = () => new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 1
         @if (formError) { <span class="text-red-600 text-sm">{{ formError }}</span> }
       </div>
     </div>
+    }
 
     <div class="flex flex-wrap gap-2 mb-4 text-sm">
       @for (t of totalsByCategory(); track t.category) {
@@ -61,8 +64,10 @@ const today = () => new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 1
               <td class="px-3 py-2">{{ e.description }}</td>
               <td class="px-3 py-2 text-right">{{ money(e.amount) }}</td>
               <td class="px-3 py-2 text-right whitespace-nowrap">
-                <button (click)="edit(e)" class="text-xs text-nova-dark hover:underline mr-3">Editar</button>
-                <button (click)="remove(e)" class="text-xs text-red-600 hover:underline">Eliminar</button>
+                @if (canEdit) {
+                  <button (click)="edit(e)" class="text-xs text-nova-dark hover:underline mr-3">Editar</button>
+                  <button (click)="remove(e)" class="text-xs text-red-600 hover:underline">Eliminar</button>
+                }
               </td>
             </tr>
           } @empty {
@@ -85,6 +90,9 @@ export class FinanceExpensesComponent implements OnChanges {
   error = '';
   formError = '';
   money = money;
+
+  /** El usuario de finanzas solo consulta */
+  readonly canEdit = inject(AuthService).isAdmin();
 
   constructor(private api: ApiService) {}
 

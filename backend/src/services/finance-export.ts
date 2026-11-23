@@ -310,6 +310,7 @@ export async function buildWorkbook(range: Range) {
       city: [s.city, s.department].filter(Boolean).join(", "),
       payment: s.paymentMethod,
       product: i.productName,
+      color: i.color || "",
       size: i.size,
       quantity: i.quantity,
       unitPrice: i.unitPrice,
@@ -331,6 +332,7 @@ export async function buildWorkbook(range: Range) {
       { header: "Ciudad", key: "city", width: 22 },
       { header: "Medio de pago", key: "payment", width: 16 },
       { header: "Prenda", key: "product", width: 28 },
+      { header: "Color", key: "color", width: 12 },
       { header: "Talla", key: "size", width: 8 },
       { header: "Cant.", key: "quantity", format: "int", width: 8 },
       { header: "Precio unit.", key: "unitPrice", format: "money", width: 14 },
@@ -418,16 +420,17 @@ export async function buildWorkbook(range: Range) {
   table(wb, "Cierre anual", closeCols({ header: "Año", key: "year", width: 10 }), yearly);
 
   // 8. Inventario
-  const sizeOrder = ["XS", "S", "M", "L", "XL", "XXL"];
+  const sizeOrder = ["XS", "S", "M", "L", "XL", "XXL", "Única"];
   const rank = (size: string) => (sizeOrder.indexOf(size) + 1 || 99);
   const inventory = products.flatMap((p) =>
-    [...p.sizes].sort((a, b) => rank(a.size) - rank(b.size)).map((s) => {
+    [...p.sizes].sort((a, b) => (a.color || "").localeCompare(b.color || "") || rank(a.size) - rank(b.size)).map((s) => {
       const cost = p.cost === null || p.cost === undefined ? null : Math.round(Number(p.cost));
       const price = Math.round(Number(p.price));
       return {
         name: p.name,
         category: p.category?.name || "",
         active: p.isActive ? "Sí" : "No",
+        color: s.color || "",
         size: s.size,
         stock: s.stock,
         price,
@@ -444,6 +447,7 @@ export async function buildWorkbook(range: Range) {
       { header: "Prenda", key: "name", width: 30 },
       { header: "Categoría", key: "category", width: 16 },
       { header: "Activo", key: "active", width: 8 },
+      { header: "Color", key: "color", width: 12 },
       { header: "Talla", key: "size", width: 8 },
       { header: "Stock", key: "stock", format: "int" },
       { header: "Precio", key: "price", format: "money" },

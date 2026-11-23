@@ -37,6 +37,10 @@ export class InventoryMovement {
   @Column()
   size: string;
 
+  // Color de la variante ("" si la prenda no maneja colores)
+  @Column({ default: "" })
+  color: string;
+
   @Column()
   type: MovementType;
 

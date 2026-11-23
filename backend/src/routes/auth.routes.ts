@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { AppDataSource } from "../config/data-source";
 import { User } from "../entities";
-import { authMiddleware, AuthRequest } from "../middleware/auth";
+import { AuthRequest, staffMiddleware } from "../middleware/auth";
 import { jwtSecret, loginLimiter, passwordLimiter } from "../config/security";
 
 const router = createRouter();
@@ -36,14 +36,14 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
   res.json({ token: signToken(user), user: { id: user.id, email: user.email, role: user.role } });
 });
 
-router.get("/me", authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get("/me", staffMiddleware, async (req: AuthRequest, res: Response) => {
   const user = await userRepo().findOne({ where: { id: req.userId! } });
   if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
   res.json({ id: user.id, email: user.email, role: user.role });
 });
 
 /** Cambiar la contraseña del admin: cierra todas las demás sesiones abiertas */
-router.put("/password", passwordLimiter, authMiddleware, async (req: AuthRequest, res: Response) => {
+router.put("/password", passwordLimiter, staffMiddleware, async (req: AuthRequest, res: Response) => {
   const currentPassword = String(req.body?.currentPassword ?? "");
   const newPassword = String(req.body?.newPassword ?? "");
   const user = await userRepo().findOne({ where: { id: req.userId! } });

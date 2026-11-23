@@ -1,11 +1,13 @@
-import { Component, Input, OnChanges, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { AuthService } from '../../../services/auth.service';
 import { CostRow, FinanceRange, Sale } from '../../../models/types';
 import { CHANNEL_LABELS, PAYMENT_LABELS, label, money } from './finance-format';
 
-interface SaleLine { productId: number | null; size: string; quantity: number; unitPrice: number | null; }
+// variant = "color|talla" (color vacío si la prenda no maneja colores)
+interface SaleLine { productId: number | null; variant: string; quantity: number; unitPrice: number | null; }
 
 const today = () => new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 10);
 
@@ -17,12 +19,14 @@ const today = () => new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 1
 
     <div class="flex flex-wrap items-center gap-3 mb-4">
       <p class="text-sm text-nova-gray">{{ activeSales().length }} ventas · {{ money(totalSales()) }} · utilidad bruta {{ money(totalProfit()) }}</p>
-      <button (click)="toggleForm()" class="ml-auto bg-nova-dark text-white px-4 py-2 rounded text-sm">
-        {{ showForm ? 'Cerrar' : '+ Registrar venta directa' }}
-      </button>
+      @if (canEdit) {
+        <button (click)="toggleForm()" class="ml-auto bg-nova-dark text-white px-4 py-2 rounded text-sm">
+          {{ showForm ? 'Cerrar' : '+ Registrar venta directa' }}
+        </button>
+      }
     </div>
 
-    @if (showForm) {
+    @if (showForm && canEdit) {
       <div class="bg-white border border-nova-blush rounded-lg p-5 mb-6">
         <h3 class="font-semibold text-nova-dark mb-1">Venta directa</h3>
         <p class="text-xs text-nova-gray mb-4">Para ventas por WhatsApp, en persona o en ferias. Descuenta el inventario y entra a los reportes.</p>
@@ -50,11 +54,11 @@ const today = () => new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 1
                 </select>
               </div>
               <div class="col-span-4 md:col-span-2">
-                @if (i === 0) { <label class="block mb-1">Talla</label> }
-                <select [(ngModel)]="l.size" class="inp">
+                @if (i === 0) { <label class="block mb-1">Color / talla *</label> }
+                <select [(ngModel)]="l.variant" class="inp">
                   <option value="">—</option>
-                  @for (s of sizesOf(l.productId); track s.size) {
-                    <option [value]="s.size" [disabled]="s.stock <= 0">{{ s.size }} ({{ s.stock }})</option>
+                  @for (s of sizesOf(l.productId); track (s.color || '') + s.size) {
+                    <option [value]="(s.color || '') + '|' + s.size" [disabled]="s.stock <= 0">{{ s.color ? s.color + ' · ' : '' }}{{ s.size }} ({{ s.stock }})</option>
                   }
                 </select>
               </div>
@@ -115,7 +119,7 @@ const today = () => new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 1
               <td class="px-3 py-2">{{ s.customerName }}<span class="block text-xs text-nova-gray">{{ s.city }}</span></td>
               <td class="px-3 py-2">
                 @for (i of s.items; track $index) {
-                  <span class="block">{{ i.quantity }} × {{ i.productName }} ({{ i.size }}) · {{ money(i.unitPrice) }}</span>
+                  <span class="block">{{ i.quantity }} × {{ i.productName }} ({{ i.color ? i.color + ', ' : '' }}{{ i.size }}) · {{ money(i.unitPrice) }}</span>
                 }
               </td>
               <td class="px-3 py-2 whitespace-nowrap">{{ paymentLabel(s.paymentMethod || 'SIN DATO') }}</td>
@@ -123,7 +127,7 @@ const today = () => new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 1
               <td class="px-3 py-2 text-right whitespace-nowrap">{{ money(s.cogs) }}@if (s.missingCost) { <span class="text-yellow-600" title="Hay prendas sin costo">*</span> }</td>
               <td class="px-3 py-2 text-right whitespace-nowrap font-medium">{{ money(s.grossProfit) }}</td>
               <td class="px-3 py-2 text-right">
-                @if (s.channel === 'MANUAL' && s.status === 'APPROVED') {
+                @if (canEdit && s.channel === 'MANUAL' && s.status === 'APPROVED') {
                   <button (click)="voidSale(s)" class="text-xs text-red-600 hover:underline">Anular</button>
                 }
               </td>
@@ -152,6 +156,9 @@ export class FinanceSalesComponent implements OnInit, OnChanges {
   paymentMethods = ['EFECTIVO', 'TRANSFERENCIA', 'NEQUI', 'DAVIPLATA', 'DATAFONO', 'OTRO'];
   form = this.emptyForm();
   money = money;
+
+  /** El usuario de finanzas solo consulta: no registra ni anula ventas */
+  readonly canEdit = inject(AuthService).isAdmin();
 
   constructor(private api: ApiService) {}
 
@@ -185,17 +192,17 @@ export class FinanceSalesComponent implements OnInit, OnChanges {
   emptyForm() {
     return {
       date: today(), paymentMethod: '', customerName: '', phone: '', city: '', notes: '',
-      shippingCost: 0, items: [{ productId: null, size: '', quantity: 1, unitPrice: null }] as SaleLine[],
+      shippingCost: 0, items: [{ productId: null, variant: '', quantity: 1, unitPrice: null }] as SaleLine[],
     };
   }
 
-  addLine() { this.form.items.push({ productId: null, size: '', quantity: 1, unitPrice: null }); }
+  addLine() { this.form.items.push({ productId: null, variant: '', quantity: 1, unitPrice: null }); }
 
   sizesOf(id: number | null) { return this.products.find(p => p.id === id)?.sizes || []; }
 
   onProduct(l: SaleLine) {
     const p = this.products.find(x => x.id === l.productId);
-    l.size = '';
+    l.variant = '';
     l.unitPrice = p ? p.price : null;
   }
 
@@ -212,12 +219,16 @@ export class FinanceSalesComponent implements OnInit, OnChanges {
   save() {
     this.formError = '';
     if (!this.form.paymentMethod) { this.formError = 'Selecciona el medio de pago'; return; }
-    if (this.form.items.some(l => !l.productId || !l.size || !(l.quantity > 0) || l.unitPrice === null)) {
-      this.formError = 'Completa prenda, talla, cantidad y precio en cada línea';
+    if (this.form.items.some(l => !l.productId || !l.variant || !(l.quantity > 0) || l.unitPrice === null)) {
+      this.formError = 'Completa prenda, color/talla, cantidad y precio en cada línea';
       return;
     }
     this.saving = true;
-    this.api.createSale(this.form).subscribe({
+    const items = this.form.items.map(({ variant, ...l }) => {
+      const [color, size] = variant.split('|');
+      return { ...l, color, size };
+    });
+    this.api.createSale({ ...this.form, items }).subscribe({
       next: () => {
         this.saving = false;
         this.showForm = false;

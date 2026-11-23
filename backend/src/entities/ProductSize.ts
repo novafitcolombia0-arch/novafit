@@ -15,6 +15,10 @@ export class ProductSize {
   @Column()
   size: string;
 
+  // Color de la variante ("" = la prenda no maneja colores). Cada color + talla tiene su propio stock
+  @Column({ default: "" })
+  color: string;
+
   @Column({ default: 0 })
   stock: number;
 

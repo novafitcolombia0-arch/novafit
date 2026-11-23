@@ -28,7 +28,7 @@ import { OrderSummary } from '../../models/types';
             <p class="text-[34px] font-bold tracking-tight mt-1">{{ order.total | currency:'COP':'$':'1.0-0' }}</p>
             <ul class="text-sm text-[#6b6862] mt-2 mb-6 space-y-0.5">
               @for (i of order.items; track $index) {
-                <li>{{ i.quantity }} × {{ i.productName }} ({{ i.size }})</li>
+                <li>{{ i.quantity }} × {{ i.productName }} ({{ i.color ? i.color + ", " : "" }}{{ i.size }})</li>
               }
               @if (order.shippingCost) { <li>Envío {{ order.shippingCost | currency:'COP':'$':'1.0-0' }}</li> }
             </ul>

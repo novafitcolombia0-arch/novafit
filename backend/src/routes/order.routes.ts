@@ -60,8 +60,9 @@ const publicView = (order: Order) => ({
   total: order.total,
   paymentMethod: order.paymentMethod,
   createdAt: order.createdAt,
-  items: order.items.map(({ productName, size, unitPrice, quantity }) => ({
+  items: order.items.map(({ productName, color, size, unitPrice, quantity }) => ({
     productName,
+    color,
     size,
     unitPrice,
     quantity,
@@ -99,6 +100,9 @@ router.post("/checkout", checkoutLimiter, async (req: Request, res: Response) =>
   if (!c.customerName || !c.department || !c.city || !c.address) {
     return res.status(400).json({ message: "Completa tus datos de envío" });
   }
+  if (c.documentId.length < 5 || c.documentId.length > 12) {
+    return res.status(400).json({ message: "Número de cédula no válido" });
+  }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)) {
     return res.status(400).json({ message: "Correo electrónico no válido" });
   }
@@ -107,16 +111,17 @@ router.post("/checkout", checkoutLimiter, async (req: Request, res: Response) =>
   }
 
   // Unir líneas repetidas (mismo producto y talla)
-  const lines = new Map<string, { productId: number; size: string; quantity: number }>();
+  const lines = new Map<string, { productId: number; color: string; size: string; quantity: number }>();
   for (const raw of items) {
     const productId = parseInt(raw?.productId, 10);
     const size = clean(raw?.size, 20);
+    const color = clean(raw?.color, 40);
     const quantity = parseInt(raw?.quantity, 10);
     if (!productId || !size || !quantity || quantity < 1) {
       return res.status(400).json({ message: "Hay un producto inválido en el carrito" });
     }
-    const key = `${productId}|${size}`;
-    const line = lines.get(key) || { productId, size, quantity: 0 };
+    const key = `${productId}|${color}|${size}`;
+    const line = lines.get(key) || { productId, color, size, quantity: 0 };
     line.quantity += quantity;
     if (line.quantity > MAX_QTY_PER_LINE) {
       return res.status(400).json({ message: `Máximo ${MAX_QTY_PER_LINE} unidades por talla` });
@@ -138,12 +143,14 @@ router.post("/checkout", checkoutLimiter, async (req: Request, res: Response) =>
     if (!product) {
       return res.status(409).json({ message: "Uno de los productos ya no está disponible" });
     }
-    if (!product.sizes.some((s) => s.size === line.size)) {
-      return res.status(409).json({ message: `La talla ${line.size} de ${product.name} ya no está disponible` });
+    if (!product.sizes.some((s) => s.size === line.size && (s.color || "") === line.color)) {
+      const variant = line.color ? `${line.color} talla ${line.size}` : `talla ${line.size}`;
+      return res.status(409).json({ message: `${product.name} en ${variant} ya no está disponible` });
     }
     orderItems.push({
       productId: product.id,
       productName: product.name,
+      color: line.color,
       size: line.size,
       unitPrice: Math.round(Number(product.price)),
       unitCost: product.cost === null || product.cost === undefined ? null : Math.round(Number(product.cost)),
@@ -184,7 +191,7 @@ router.post("/checkout", checkoutLimiter, async (req: Request, res: Response) =>
       await reserveStock(manager, orderItems as OrderItem[], reference);
       const created = manager.create(Order, {
         ...c,
-        documentId: c.documentId || undefined,
+        documentId: c.documentId,
         notes: c.notes || undefined,
         reference,
         status: "PENDING",
@@ -222,10 +229,8 @@ router.post("/checkout", checkoutLimiter, async (req: Request, res: Response) =>
     "shipping-address:city": c.city,
     "shipping-address:phone-number": c.phone,
   });
-  if (c.documentId) {
-    params.set("customer-data:legal-id", c.documentId);
-    params.set("customer-data:legal-id-type", "CC");
-  }
+  params.set("customer-data:legal-id", c.documentId);
+  params.set("customer-data:legal-id-type", "CC");
   // El cortafuegos de Wompi responde 403 si redirect-url es local (localhost, 127.0.0.1, IP privada).
   // En local se omite: Wompi muestra su propio comprobante y el pedido se consulta en /pedido/<referencia>.
   if (!/^https:\/\//.test(frontendUrl) || /\/\/(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(frontendUrl)) {

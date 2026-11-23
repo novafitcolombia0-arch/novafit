@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { AuthService } from '../../../services/auth.service';
 import { CostRow } from '../../../models/types';
 import { money, pct } from './finance-format';
 
@@ -62,13 +63,13 @@ interface EditableRow extends CostRow {
                 <span class="text-nova-dark">{{ r.name }}</span>
                 <span class="block text-xs text-nova-gray">{{ r.category }}@if (!r.isActive) { · inactivo }</span>
               </td>
-              <td class="px-3 py-2 text-right"><input type="number" min="0" [(ngModel)]="r.draftPrice" class="w-28 text-right border border-nova-blush rounded px-2 py-1"></td>
-              <td class="px-3 py-2 text-right"><input type="number" min="0" [(ngModel)]="r.draftCost" placeholder="Sin costo" class="w-28 text-right border border-nova-blush rounded px-2 py-1"></td>
+              <td class="px-3 py-2 text-right"><input type="number" min="0" [(ngModel)]="r.draftPrice" [disabled]="!canEdit" class="w-28 text-right border border-nova-blush rounded px-2 py-1"></td>
+              <td class="px-3 py-2 text-right"><input type="number" min="0" [(ngModel)]="r.draftCost" [disabled]="!canEdit" placeholder="Sin costo" class="w-28 text-right border border-nova-blush rounded px-2 py-1"></td>
               <td class="px-3 py-2 text-right" [class.text-red-600]="unitProfit(r) !== null && unitProfit(r)! < 0">{{ money(unitProfit(r)) }}</td>
               <td class="px-3 py-2 text-right">{{ unitProfit(r) === null ? '—' : pct(unitProfit(r)! / r.draftPrice) }}</td>
               <td class="px-3 py-2 text-right">{{ r.stock }}</td>
               <td class="px-3 py-2 text-right whitespace-nowrap">
-                @if (dirty(r)) {
+                @if (canEdit && dirty(r)) {
                   <button (click)="saveRow(r)" [disabled]="r.saving" class="bg-nova-dark text-white text-xs px-3 py-1 rounded disabled:opacity-50">Guardar</button>
                 } @else if (r.saved) {
                   <span class="text-green-700 text-xs">✓ Guardado</span>
@@ -84,9 +85,9 @@ interface EditableRow extends CostRow {
       <h3 class="font-semibold text-nova-dark mb-1">Comisión de Wompi</h3>
       <p class="text-xs text-nova-gray mb-3">Se usa para estimar cuánto se lleva Wompi de cada venta web (porcentaje + valor fijo, más IVA).</p>
       <div class="flex flex-wrap items-end gap-3 text-sm">
-        <div><label class="block mb-1">Porcentaje (%)</label><input type="number" step="0.01" min="0" [(ngModel)]="feePercent" class="w-24 border border-nova-blush rounded px-2 py-1.5"></div>
-        <div><label class="block mb-1">Fijo por venta ($)</label><input type="number" min="0" [(ngModel)]="feeFixed" class="w-28 border border-nova-blush rounded px-2 py-1.5"></div>
-        <button (click)="saveFees()" class="bg-nova-dark text-white px-4 py-1.5 rounded">Guardar</button>
+        <div><label class="block mb-1">Porcentaje (%)</label><input type="number" step="0.01" min="0" [(ngModel)]="feePercent" [disabled]="!canEdit" class="w-24 border border-nova-blush rounded px-2 py-1.5"></div>
+        <div><label class="block mb-1">Fijo por venta ($)</label><input type="number" min="0" [(ngModel)]="feeFixed" [disabled]="!canEdit" class="w-28 border border-nova-blush rounded px-2 py-1.5"></div>
+        @if (canEdit) { <button (click)="saveFees()" class="bg-nova-dark text-white px-4 py-1.5 rounded">Guardar</button> }
         @if (feesSaved) { <span class="text-green-700 text-xs">✓ Guardado</span> }
       </div>
     </div>
@@ -100,6 +101,9 @@ export class FinanceCostsComponent implements OnInit {
   error = '';
   money = money;
   pct = pct;
+
+  /** El usuario de finanzas solo consulta */
+  readonly canEdit = inject(AuthService).isAdmin();
 
   constructor(private api: ApiService) {}
 

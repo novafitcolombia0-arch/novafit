@@ -10,6 +10,14 @@ import { Category } from "./Category";
 import { ProductImage } from "./ProductImage";
 import { ProductSize } from "./ProductSize";
 
+export interface ProductColor {
+  name: string;
+  hex: string;
+}
+
+/** Talla para prendas que no manejan tallas */
+export const ONE_SIZE = "Única";
+
 @Entity()
 export class Product {
   @PrimaryGeneratedColumn()
@@ -30,6 +38,10 @@ export class Product {
   // Lo que cuesta la prenda (producción/compra). select: false → nunca sale en la tienda pública
   @Column("decimal", { precision: 10, scale: 2, nullable: true, select: false })
   cost: number | null;
+
+  // Colores disponibles, en orden: [{ name: "Rojo", hex: "#c0392b" }]. null o [] = no maneja colores
+  @Column({ type: "simple-json", nullable: true })
+  colors: ProductColor[] | null;
 
   @Column({ default: true })
   isActive: boolean;

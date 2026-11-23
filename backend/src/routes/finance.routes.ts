@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { createRouter } from "../middleware/errors";
 import { AppDataSource } from "../config/data-source";
 import { Expense, EXPENSE_CATEGORIES, Order, OrderItem, Product } from "../entities";
-import { authMiddleware } from "../middleware/auth";
+import { adminOnly, staffMiddleware } from "../middleware/auth";
 import {
   computeBreakdowns,
   computeKpis,
@@ -22,7 +22,8 @@ import { newReference, OutOfStockError } from "../services/orders";
 import { buildWorkbook } from "../services/finance-export";
 
 const router = createRouter();
-router.use(authMiddleware);
+// Finanzas la pueden consultar admin y finanzas; registrar o cambiar datos es solo de admin
+router.use(staffMiddleware);
 
 export const MANUAL_PAYMENT_METHODS = ["EFECTIVO", "TRANSFERENCIA", "NEQUI", "DAVIPLATA", "DATAFONO", "OTRO"];
 
@@ -77,7 +78,7 @@ router.get("/sales", async (req: Request, res: Response) => {
 });
 
 /** Registrar una venta hecha por fuera de la web (WhatsApp, en persona, feria...) */
-router.post("/sales", async (req: Request, res: Response) => {
+router.post("/sales", adminOnly, async (req: Request, res: Response) => {
   const { date, paymentMethod, customerName, phone, city, notes, items, shippingCost } = req.body || {};
   const saleDate = isDate(date) ? date : todayInColombia();
   if (saleDate > todayInColombia()) return res.status(400).json({ message: "La fecha no puede ser futura" });
@@ -103,12 +104,14 @@ router.post("/sales", async (req: Request, res: Response) => {
     const quantity = parseInt(raw?.quantity, 10);
     const unitPrice = Math.round(Number(raw?.unitPrice));
     const size = String(raw?.size || "").trim();
+    const color = String(raw?.color || "").trim();
     if (!product || !size || !(quantity > 0) || !(unitPrice >= 0)) {
       return res.status(400).json({ message: "Revisa las prendas de la venta" });
     }
     lines.push({
       productId: product.id,
       productName: product.name,
+      color,
       size,
       quantity,
       unitPrice,
@@ -128,13 +131,14 @@ router.post("/sales", async (req: Request, res: Response) => {
         const stock = await changeStock(manager, {
           productId: l.productId!,
           productName: l.productName!,
+          color: l.color,
           size: l.size!,
           delta: -l.quantity!,
           mode: "strict",
           type: "VENTA_MANUAL",
           reference,
         });
-        if (stock === null) throw new OutOfStockError(l.productName!, l.size!);
+        if (stock === null) throw new OutOfStockError(l.productName!, l.color ? `${l.color} / ${l.size}` : l.size!);
       }
       return manager.save(
         manager.create(Order, {
@@ -164,7 +168,7 @@ router.post("/sales", async (req: Request, res: Response) => {
 });
 
 /** Anular una venta manual (por error o devolución): devuelve las prendas al inventario */
-router.post("/sales/:id/void", async (req: Request, res: Response) => {
+router.post("/sales/:id/void", adminOnly, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string, 10);
   const result = await AppDataSource.transaction(async (manager) => {
     const order = await manager.findOne(Order, {
@@ -182,6 +186,7 @@ router.post("/sales/:id/void", async (req: Request, res: Response) => {
       await changeStock(manager, {
         productId: i.productId,
         productName: i.productName,
+        color: i.color,
         size: i.size,
         delta: i.quantity,
         type: "ANULACION",
@@ -217,14 +222,14 @@ router.get("/expenses", async (req: Request, res: Response) => {
   res.json(rows);
 });
 
-router.post("/expenses", async (req: Request, res: Response) => {
+router.post("/expenses", adminOnly, async (req: Request, res: Response) => {
   const data = parseExpense(req.body);
   if (!data) return res.status(400).json({ message: "Completa fecha, categoría, descripción y valor" });
   const repo = AppDataSource.getRepository(Expense);
   res.status(201).json(await repo.save(repo.create(data)));
 });
 
-router.put("/expenses/:id", async (req: Request, res: Response) => {
+router.put("/expenses/:id", adminOnly, async (req: Request, res: Response) => {
   const data = parseExpense(req.body);
   if (!data) return res.status(400).json({ message: "Completa fecha, categoría, descripción y valor" });
   const repo = AppDataSource.getRepository(Expense);
@@ -234,7 +239,7 @@ router.put("/expenses/:id", async (req: Request, res: Response) => {
   res.json(await repo.findOne({ where: { id } }));
 });
 
-router.delete("/expenses/:id", async (req: Request, res: Response) => {
+router.delete("/expenses/:id", adminOnly, async (req: Request, res: Response) => {
   const result = await AppDataSource.getRepository(Expense).delete(parseInt(req.params.id as string, 10));
   if (!result.affected) return res.status(404).json({ message: "Gasto no encontrado" });
   res.json({ message: "Gasto eliminado" });
@@ -259,12 +264,12 @@ router.get("/costs", async (_req: Request, res: Response) => {
       price: Math.round(Number(p.price)),
       cost: p.cost === null || p.cost === undefined ? null : Math.round(Number(p.cost)),
       stock: p.sizes.reduce((s, x) => s + x.stock, 0),
-      sizes: p.sizes.map((s) => ({ size: s.size, stock: s.stock })),
+      sizes: p.sizes.map((s) => ({ color: s.color || "", size: s.size, stock: s.stock })),
     }))
   );
 });
 
-router.put("/costs/:id", async (req: Request, res: Response) => {
+router.put("/costs/:id", adminOnly, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string, 10);
   const { price, cost } = req.body || {};
   const update: Partial<Product> = {};

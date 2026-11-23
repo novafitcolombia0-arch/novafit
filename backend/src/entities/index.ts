@@ -12,5 +12,7 @@ import { DiscountCode } from "./DiscountCode";
 import { Subscriber } from "./Subscriber";
 import { EmailCampaign } from "./EmailCampaign";
 export type { MovementType } from "./InventoryMovement";
+export type { ProductColor } from "./Product";
+export { ONE_SIZE } from "./Product";
 
 export { Category, Product, ProductImage, ProductSize, User, SiteSetting, Order, OrderItem, InventoryMovement, Expense, EXPENSE_CATEGORIES, DiscountCode, Subscriber, EmailCampaign };

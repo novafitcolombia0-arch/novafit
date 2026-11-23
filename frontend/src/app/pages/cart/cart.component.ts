@@ -19,7 +19,7 @@ import { ApiService } from '../../services/api.service';
       } @else {
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div class="lg:col-span-2 space-y-4">
-            @for (item of cart.items(); track item.productId + item.size) {
+            @for (item of cart.items(); track item.productId + '|' + (item.color || '') + '|' + item.size) {
               <div class="flex gap-4 border border-nova-blush rounded-lg p-3">
                 <a [routerLink]="['/producto', item.slug]" class="w-20 h-24 bg-nova-pink rounded overflow-hidden shrink-0">
                   @if (item.image) { <img [src]="item.image" [alt]="item.name" class="w-full h-full object-cover"> }
@@ -27,15 +27,15 @@ import { ApiService } from '../../services/api.service';
                 <div class="flex-1 min-w-0">
                   <div class="flex justify-between gap-2">
                     <a [routerLink]="['/producto', item.slug]" class="font-medium text-sm text-nova-dark hover:text-nova-rose truncate">{{ item.name }}</a>
-                    <button (click)="cart.remove(item.productId, item.size)" class="text-xs text-nova-gray hover:text-red-600 shrink-0">Quitar</button>
+                    <button (click)="cart.remove(item)" class="text-xs text-nova-gray hover:text-red-600 shrink-0">Quitar</button>
                   </div>
-                  <p class="text-xs text-nova-gray mt-1">Talla: {{ item.size }}</p>
+                  <p class="text-xs text-nova-gray mt-1">{{ variant(item) }}</p>
                   <div class="flex items-center justify-between mt-3">
                     <div class="flex items-center border border-nova-blush rounded">
-                      <button (click)="cart.setQuantity(item.productId, item.size, item.quantity - 1)" [disabled]="item.quantity <= 1"
+                      <button (click)="cart.setQuantity(item, item.quantity - 1)" [disabled]="item.quantity <= 1"
                               class="w-8 h-8 text-nova-dark disabled:opacity-30">−</button>
                       <span class="w-8 text-center text-sm">{{ item.quantity }}</span>
-                      <button (click)="cart.setQuantity(item.productId, item.size, item.quantity + 1)" [disabled]="item.quantity >= item.maxQuantity"
+                      <button (click)="cart.setQuantity(item, item.quantity + 1)" [disabled]="item.quantity >= item.maxQuantity"
                               class="w-8 h-8 text-nova-dark disabled:opacity-30">+</button>
                     </div>
                     <p class="text-sm text-nova-dark">{{ item.price * item.quantity | currency:'COP':'$':'1.0-0' }}</p>
@@ -76,6 +76,8 @@ export class CartComponent implements OnInit {
   shipping = computed(() =>
     this.freeFrom() > 0 && this.cart.subtotal() >= this.freeFrom() ? 0 : this.shippingCost()
   );
+
+  variant = CartService.variantLabel;
 
   constructor(public cart: CartService, private api: ApiService) {}
 

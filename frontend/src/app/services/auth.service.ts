@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { AuthResponse, User } from '../models/types';
+import { AuthResponse, Role, User } from '../models/types';
 import { environment } from '../../environments/environment';
 
 export const TOKEN_KEY = 'nova_token';
@@ -49,9 +49,23 @@ export class AuthService {
     session.set(TOKEN_KEY, token);
   }
 
-  /** Correo del admin con sesión abierta (para mostrarlo en el panel) */
+  /** Correo del usuario con sesión abierta (para mostrarlo en el panel) */
   currentEmail(): string {
     try { return JSON.parse(session.get(USER_KEY) || '{}').email || ''; } catch { return ''; }
+  }
+
+  /** Rol del usuario con sesión abierta: admin (todo) o finanzas (solo consulta Finanzas) */
+  role(): Role {
+    try { return JSON.parse(session.get(USER_KEY) || '{}').role === 'finanzas' ? 'finanzas' : 'admin'; } catch { return 'admin'; }
+  }
+
+  isAdmin(): boolean {
+    return this.role() === 'admin';
+  }
+
+  /** Página de inicio del panel según el rol */
+  homePath(): string {
+    return this.isAdmin() ? '/admin' : '/admin/finanzas';
   }
 
   logout() {

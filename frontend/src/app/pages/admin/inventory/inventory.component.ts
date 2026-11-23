@@ -81,7 +81,7 @@ interface Selection {
           <button (click)="exportCsv()" class="ml-auto underline text-nova-dark hover:text-nova-rose">Descargar CSV</button>
         </div>
 
-        <p class="text-xs text-nova-gray mb-3">Toca una talla para registrar una entrada, una salida o un conteo. "Apartadas" son prendas en pedidos web que aún no se han pagado.</p>
+        <p class="text-xs text-nova-gray mb-3">Toca una talla para <strong>sumar</strong> (llegó mercancía), <strong>restar</strong> (venta en persona, daño, regalo...) o <strong>contar</strong> (fijar el número exacto). "Apartadas" son prendas en pedidos web que aún no se han pagado.</p>
 
         <!-- Tabla -->
         <div class="bg-white border border-nova-blush rounded-lg overflow-x-auto">
@@ -111,36 +111,44 @@ interface Selection {
                     </div>
                   </td>
                   <td class="px-4 py-3">
-                    <div class="flex flex-wrap gap-2">
-                      @for (s of p.sizes; track s.size) {
-                        <button (click)="select(p, s)"
-                                class="border rounded px-2 py-1 text-left min-w-[56px] transition hover:shadow"
-                                [class]="chipClass(s)"
-                                [class.ring-2]="isSelected(p, s)" [class.ring-nova-dark]="isSelected(p, s)">
-                          <span class="block text-[11px] text-nova-gray">{{ s.size }}</span>
-                          <span class="block font-semibold">{{ s.stock }}</span>
-                          @if (s.reserved > 0) { <span class="block text-[10px] text-nova-gray">{{ s.reserved }} apart.</span> }
-                        </button>
-                      } @empty {
-                        <span class="text-xs text-nova-gray">Sin tallas</span>
-                      }
-                    </div>
+                    @for (g of groups(p); track g.color) {
+                      <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                        @if (g.color) {
+                          <span class="w-20 text-xs text-nova-gray flex items-center gap-1"><span class="w-3 h-3 rounded-full border border-nova-blush shrink-0" [style.background]="g.hex"></span>{{ g.color }}</span>
+                        }
+                        @for (s of g.sizes; track s.size) {
+                          <button (click)="select(p, s)"
+                                  class="border rounded px-2 py-1 text-left min-w-[56px] transition hover:shadow"
+                                  [class]="chipClass(s)"
+                                  [class.ring-2]="isSelected(p, s)" [class.ring-nova-dark]="isSelected(p, s)">
+                            <span class="block text-[11px] text-nova-gray">{{ s.size }}</span>
+                            <span class="block font-semibold">{{ s.stock }}</span>
+                            @if (s.reserved > 0) { <span class="block text-[10px] text-nova-gray">{{ s.reserved }} apart.</span> }
+                          </button>
+                        }
+                      </div>
+                    } @empty {
+                      <span class="text-xs text-nova-gray">Sin tallas</span>
+                    }
 
                     @if (selected && selected.product.id === p.id) {
                       <div class="mt-3 border border-nova-blush rounded-lg p-3 bg-nova-cream max-w-md">
-                        <p class="font-medium text-nova-dark mb-2">Talla {{ selected.size.size }} · hay {{ selected.size.stock }}</p>
-                        <div class="flex flex-wrap gap-2 mb-2">
-                          <select [(ngModel)]="adjust.type" class="border border-nova-blush rounded px-2 py-1.5 bg-white">
-                            <option value="ENTRADA">Entrada (llegaron)</option>
-                            <option value="SALIDA">Salida (venta en persona, daño...)</option>
-                            <option value="AJUSTE">Conteo (hay exactamente)</option>
-                          </select>
-                          <input type="number" min="0" [(ngModel)]="adjust.quantity" class="w-20 border border-nova-blush rounded px-2 py-1.5"
-                                 [placeholder]="adjust.type === 'AJUSTE' ? 'Total' : 'Cant.'">
+                        <p class="font-medium text-nova-dark mb-2">{{ selected.size.color ? selected.size.color + ' · ' : '' }}{{ selected.size.size === 'Única' ? 'Talla única' : 'Talla ' + selected.size.size }} · hay {{ selected.size.stock }}</p>
+                        <div class="grid grid-cols-3 gap-1 mb-2 text-xs">
+                          <button (click)="setType('ENTRADA')" class="border rounded px-2 py-1.5" [class]="typeClass('ENTRADA')">+ Sumar</button>
+                          <button (click)="setType('SALIDA')" class="border rounded px-2 py-1.5" [class]="typeClass('SALIDA')">− Restar</button>
+                          <button (click)="setType('AJUSTE')" class="border rounded px-2 py-1.5" [class]="typeClass('AJUSTE')">= Contar</button>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 mb-2">
+                          <input type="number" [(ngModel)]="adjust.quantity" (ngModelChange)="onQuantity($event)" class="w-24 border border-nova-blush rounded px-2 py-1.5"
+                                 [placeholder]="adjust.type === 'AJUSTE' ? 'Hay exactamente' : 'Cantidad'">
+                          <span class="text-xs text-nova-gray">{{ adjust.type === 'ENTRADA' ? 'unidades que llegaron' : adjust.type === 'SALIDA' ? 'unidades que salen' : 'unidades contadas en total' }}</span>
                         </div>
                         <input [(ngModel)]="adjust.note" placeholder="Nota (opcional): proveedor, motivo..." class="w-full border border-nova-blush rounded px-2 py-1.5 mb-2">
-                        @if (preview() !== null) {
+                        @if (preview() !== null && preview()! >= 0) {
                           <p class="text-xs text-nova-gray mb-2">Quedarán <strong class="text-nova-dark">{{ preview() }}</strong> unidades.</p>
+                        } @else if (preview() !== null) {
+                          <p class="text-xs text-red-600 mb-2">No puedes restar {{ adjust.quantity }}: solo hay {{ selected.size.stock }}.</p>
                         }
                         <div class="flex gap-2">
                           <button (click)="saveAdjust()" [disabled]="saving || preview() === null || preview()! < 0"
@@ -179,7 +187,7 @@ interface Selection {
               <tr>
                 <th class="text-left px-4 py-3 font-medium">Fecha</th>
                 <th class="text-left px-4 py-3 font-medium">Prenda</th>
-                <th class="text-left px-4 py-3 font-medium">Talla</th>
+                <th class="text-left px-4 py-3 font-medium">Color / talla</th>
                 <th class="text-left px-4 py-3 font-medium">Tipo</th>
                 <th class="text-right px-4 py-3 font-medium">Cambio</th>
                 <th class="text-right px-4 py-3 font-medium">Quedó</th>
@@ -191,7 +199,7 @@ interface Selection {
                 <tr class="border-t border-nova-pink">
                   <td class="px-4 py-2 text-nova-gray whitespace-nowrap">{{ m.createdAt | date:'dd/MM/yy HH:mm' }}</td>
                   <td class="px-4 py-2 text-nova-dark">{{ m.productName }}</td>
-                  <td class="px-4 py-2">{{ m.size }}</td>
+                  <td class="px-4 py-2 whitespace-nowrap">{{ m.color ? m.color + ' · ' : '' }}{{ m.size }}</td>
                   <td class="px-4 py-2">{{ movementLabel(m.type) }}</td>
                   <td class="px-4 py-2 text-right font-medium" [class.text-green-700]="m.quantity > 0" [class.text-red-600]="m.quantity < 0">
                     {{ m.quantity > 0 ? '+' : '' }}{{ m.quantity }}
@@ -241,7 +249,7 @@ export class AdminInventoryComponent implements OnInit {
         this.loading = false;
         if (this.selected) {
           const p = products.find(x => x.id === this.selected!.product.id);
-          const s = p?.sizes.find(x => x.size === this.selected!.size.size);
+          const s = p?.sizes.find(x => x.size === this.selected!.size.size && x.color === this.selected!.size.color);
           this.selected = p && s ? { product: p, size: s } : null;
         }
       },
@@ -291,7 +299,35 @@ export class AdminInventoryComponent implements OnInit {
   totalSold(p: InventoryProduct) { return p.sizes.reduce((n, s) => n + s.sold30d, 0); }
 
   isSelected(p: InventoryProduct, s: InventorySize) {
-    return this.selected?.product.id === p.id && this.selected?.size.size === s.size;
+    return this.selected?.product.id === p.id && this.selected?.size.size === s.size && this.selected?.size.color === s.color;
+  }
+
+  /** Tallas agrupadas por color (un solo grupo sin nombre si la prenda no maneja colores) */
+  groups(p: InventoryProduct): { color: string; hex: string; sizes: InventorySize[] }[] {
+    const groups: { color: string; hex: string; sizes: InventorySize[] }[] = [];
+    for (const s of p.sizes) {
+      let g = groups.find(x => x.color === s.color);
+      if (!g) groups.push(g = { color: s.color, hex: p.colors?.find(c => c.name === s.color)?.hex || '#ccc', sizes: [] });
+      g.sizes.push(s);
+    }
+    return groups;
+  }
+
+  setType(type: 'ENTRADA' | 'SALIDA' | 'AJUSTE') {
+    this.adjust.type = type;
+  }
+
+  typeClass(type: 'ENTRADA' | 'SALIDA' | 'AJUSTE'): string {
+    const color = { ENTRADA: ['border-green-700', 'bg-green-700', 'text-green-800'], SALIDA: ['border-red-600', 'bg-red-600', 'text-red-700'], AJUSTE: ['border-nova-dark', 'bg-nova-dark', 'text-nova-dark'] }[type];
+    return this.adjust.type === type ? `${color[0]} ${color[1]} text-white` : `${color[0]} bg-white ${color[2]}`;
+  }
+
+  /** Si escriben un número negativo en "Sumar", se entiende que quieren restar */
+  onQuantity(value: number | null) {
+    if (value !== null && value < 0 && this.adjust.type !== 'AJUSTE') {
+      this.adjust.type = 'SALIDA';
+      setTimeout(() => (this.adjust.quantity = Math.abs(value)));
+    }
   }
 
   select(product: InventoryProduct, size: InventorySize) {
@@ -316,6 +352,7 @@ export class AdminInventoryComponent implements OnInit {
     this.error = '';
     this.api.adjustInventory({
       productId: this.selected.product.id,
+      color: this.selected.size.color,
       size: this.selected.size.size,
       type: this.adjust.type,
       quantity: Math.trunc(Number(this.adjust.quantity)),
@@ -359,10 +396,10 @@ export class AdminInventoryComponent implements OnInit {
   }
 
   exportCsv() {
-    const rows = [['Prenda', 'Categoría', 'Talla', 'Stock', 'Apartadas', 'Vendidas web 30 días', 'Precio', 'Activo']];
+    const rows = [['Prenda', 'Categoría', 'Color', 'Talla', 'Stock', 'Apartadas', 'Vendidas web 30 días', 'Precio', 'Activo']];
     for (const p of this.products) {
       for (const s of p.sizes) {
-        rows.push([p.name, p.category, s.size, String(s.stock), String(s.reserved), String(s.sold30d), String(p.price), p.isActive ? 'Sí' : 'No']);
+        rows.push([p.name, p.category, s.color, s.size, String(s.stock), String(s.reserved), String(s.sold30d), String(p.price), p.isActive ? 'Sí' : 'No']);
       }
     }
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');

@@ -1,13 +1,14 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
-import { Category, Product } from '../../models/types';
+import { Category, ONE_SIZE, Product, SIZE_ORDER } from '../../models/types';
+import { ColorDotsComponent, cardImage } from '../../shared/color-dots/color-dots.component';
 import { CurrencyPipe } from '@angular/common';
 import { WelcomeModalComponent } from '../../shared/welcome-modal/welcome-modal.component';
 
 @Component({
     selector: 'app-home',
-    imports: [RouterLink, CurrencyPipe, WelcomeModalComponent],
+    imports: [RouterLink, CurrencyPipe, WelcomeModalComponent, ColorDotsComponent],
     template: `
     <app-welcome-modal></app-welcome-modal>
     <section class="relative text-white overflow-hidden h-[500px] md:h-[600px]">
@@ -83,6 +84,7 @@ import { WelcomeModalComponent } from '../../shared/welcome-modal/welcome-modal.
             </div>
             <h3 class="font-medium text-sm group-hover:text-nova-rose transition text-nova-dark">{{ product.name }}</h3>
             <p class="text-nova-gray text-sm mt-1">{{ product.price | currency:'COP':'$':'1.0-0' }} COP</p>
+            <app-color-dots [product]="product" (preview)="previewColor[product.id] = $event" />
           </a>
         }
       </div>
@@ -123,8 +125,17 @@ export class HomeComponent implements OnInit, OnDestroy {
   prev() { this.currentSlide = (this.currentSlide - 1 + this.heroImages.length) % this.heroImages.length; }
   goTo(index: number) { this.currentSlide = index; }
 
+  /** Color que se está señalando en cada tarjeta (para mostrar su foto) */
+  previewColor: Record<number, string> = {};
+
   getMainImage(product: Product): string | null {
-    const main = product.images?.find(i => i.isMain) || product.images?.[0];
-    return main ? main.imageData : null;
+    return cardImage(product, this.previewColor[product.id]);
+  }
+
+  /** Tallas sin repetir (con colores, cada talla existe una vez por color) */
+  sizeLabels(product: Product): string[] {
+    const rank = (s: string) => SIZE_ORDER.indexOf(s) + 1 || 99;
+    return [...new Set((product.sizes || []).map(s => s.size))].sort((a, b) => rank(a) - rank(b))
+      .map(s => (s === ONE_SIZE ? 'Talla única' : s));
   }
 }

@@ -20,6 +20,8 @@ const ICONS: Record<string, string> = {
   percent: 'M19 5 5 19M7.5 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm9 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z',
   mail: 'M4 6h16v12H4zM4 7l8 6 8-6',
   send: 'M4 12 20 4l-4 16-5-6-7-2Zm7 2 9-10',
+  users: 'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm-6 9a6 6 0 0 1 12 0M16 4.5a3.5 3.5 0 0 1 0 6.5M18 14a5.5 5.5 0 0 1 3 6',
+  key: 'M14.5 10a4.5 4.5 0 1 0-4 4.47V14l1.5-1.5H14v-2h2v-2h-1.5ZM7.5 9.5h.01',
 };
 
 @Component({
@@ -42,11 +44,11 @@ const ICONS: Record<string, string> = {
       <div class="lg:w-[248px] lg:shrink-0 lg:bg-[#1e1e1e]">
       <aside class="fixed lg:sticky top-0 z-50 h-screen w-[248px] shrink-0 bg-[#1e1e1e] text-[#d9d6d0] flex flex-col transition-transform duration-200 lg:translate-x-0"
              [class.-translate-x-full]="!open" [class.translate-x-0]="open">
-        <a routerLink="/admin" class="flex items-center gap-3 px-6 h-20 border-b border-white/10">
+        <a [routerLink]="home" class="flex items-center gap-3 px-6 h-20 border-b border-white/10">
           <img src="assets/monogram-white.png" alt="" class="h-8">
           <span class="leading-tight">
             <span class="block text-white font-semibold tracking-tight">Nova FIT</span>
-            <span class="block text-xs text-[#9b978f]">Administración</span>
+            <span class="block text-xs text-[#9b978f]">{{ isAdmin ? 'Administración' : 'Finanzas (consulta)' }}</span>
           </span>
         </a>
 
@@ -100,14 +102,19 @@ export class AdminLayoutComponent implements OnInit {
   open = false;
   email = '';
   toShip = 0;
+  isAdmin = true;
+  home = '/admin';
 
-  groups: { title: string; items: NavItem[] }[] = [
+  groups: { title: string; items: NavItem[] }[] = [];
+
+  private readonly adminGroups: { title: string; items: NavItem[] }[] = [
     {
       title: 'Negocio',
       items: [
         { path: '/admin', label: 'Inicio', icon: 'home', exact: true },
         { path: '/admin/finanzas', label: 'Finanzas', icon: 'chart' },
         { path: '/admin/pedidos', label: 'Pedidos', icon: 'bag', badge: () => this.toShip },
+        { path: '/admin/clientes', label: 'Clientes', icon: 'users' },
       ],
     },
     {
@@ -126,13 +133,27 @@ export class AdminLayoutComponent implements OnInit {
         { path: '/admin/promociones', label: 'Promociones', icon: 'send' },
       ],
     },
-    { title: 'Ajustes', items: [{ path: '/admin/configuracion', label: 'Configuración', icon: 'settings' }] },
+    {
+      title: 'Ajustes',
+      items: [
+        { path: '/admin/configuracion', label: 'Configuración', icon: 'settings' },
+        { path: '/admin/usuarios', label: 'Usuarios', icon: 'key' },
+      ],
+    },
+  ];
+
+  // El usuario de finanzas solo ve Finanzas
+  private readonly financeGroups: { title: string; items: NavItem[] }[] = [
+    { title: 'Negocio', items: [{ path: '/admin/finanzas', label: 'Finanzas', icon: 'chart' }] },
   ];
 
   constructor(private auth: AuthService, private api: ApiService, private router: Router) {}
 
   ngOnInit() {
     this.email = this.auth.currentEmail();
+    this.isAdmin = this.auth.isAdmin();
+    this.home = this.auth.homePath();
+    this.groups = this.isAdmin ? this.adminGroups : this.financeGroups;
     this.refreshBadge();
     // Se actualiza al navegar (por ejemplo, después de marcar un pedido como despachado)
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => this.refreshBadge());
@@ -141,6 +162,7 @@ export class AdminLayoutComponent implements OnInit {
   icon(name: string) { return ICONS[name]; }
 
   private refreshBadge() {
+    if (!this.isAdmin) return; // los pedidos son solo para admin
     this.api.getOrders('APPROVED').subscribe({
       next: orders => (this.toShip = orders.filter(o => o.fulfillmentStatus === 'POR_DESPACHAR').length),
       error: () => {},

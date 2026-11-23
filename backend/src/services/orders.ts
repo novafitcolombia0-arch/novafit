@@ -34,7 +34,7 @@ export function newReference() {
   return `NF-${time}-${random}`;
 }
 
-type StockLine = Pick<OrderItem, "productId" | "size" | "quantity" | "productName">;
+type StockLine = Pick<OrderItem, "productId" | "size" | "quantity" | "productName"> & { color?: string | null };
 
 /** Descuenta inventario para un pedido web; falla si alguna talla no tiene unidades suficientes */
 export async function reserveStock(manager: EntityManager, items: StockLine[], reference: string) {
@@ -42,13 +42,14 @@ export async function reserveStock(manager: EntityManager, items: StockLine[], r
     const stock = await changeStock(manager, {
       productId: item.productId,
       productName: item.productName,
+      color: item.color,
       size: item.size,
       delta: -item.quantity,
       mode: "strict",
       type: "VENTA_WEB",
       reference,
     });
-    if (stock === null) throw new OutOfStockError(item.productName, item.size);
+    if (stock === null) throw new OutOfStockError(item.productName, item.color ? `${item.color} / ${item.size}` : item.size);
   }
 }
 
@@ -58,6 +59,7 @@ export async function releaseStock(manager: EntityManager, items: StockLine[], r
     await changeStock(manager, {
       productId: item.productId,
       productName: item.productName,
+      color: item.color,
       size: item.size,
       delta: item.quantity,
       type: "LIBERACION",
@@ -77,6 +79,7 @@ async function forceTakeStock(manager: EntityManager, items: StockLine[], refere
     await changeStock(manager, {
       productId: item.productId,
       productName: item.productName,
+      color: item.color,
       size: item.size,
       delta: -item.quantity,
       mode: "floor",

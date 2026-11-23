@@ -5,6 +5,8 @@ interface StockChange {
   productId: number;
   productName: string;
   size: string;
+  /** Color de la variante ("" o sin valor si la prenda no maneja colores) */
+  color?: string | null;
   type: MovementType;
   reference?: string;
   note?: string;
@@ -18,6 +20,7 @@ export async function logMovement(
     productId: change.productId,
     productName: change.productName,
     size: change.size,
+    color: change.color || "",
     type: change.type,
     quantity: change.quantity,
     stockAfter: change.stockAfter,
@@ -27,7 +30,7 @@ export async function logMovement(
 }
 
 /**
- * Suma o resta unidades a una talla y deja el movimiento en el historial.
+ * Suma o resta unidades a una variante (color + talla) y deja el movimiento en el historial.
  *  - mode "strict": falla (devuelve null) si no hay unidades suficientes
  *  - mode "floor":  descuenta lo que pueda sin bajar de 0
  *  - mode "free":   suma sin condiciones (entradas y liberaciones)
@@ -42,7 +45,7 @@ export async function changeStock(
   const mode = change.mode || "free";
 
   let set: string;
-  let condition = `"productId" = :productId AND size = :size`;
+  let condition = `"productId" = :productId AND color = :color AND size = :size`;
   if (mode === "floor") {
     set = `GREATEST(stock + (${delta}), 0)`;
   } else {
@@ -54,7 +57,7 @@ export async function changeStock(
     .createQueryBuilder()
     .update(ProductSize)
     .set({ stock: () => set })
-    .where(condition, { productId: change.productId, size: change.size })
+    .where(condition, { productId: change.productId, color: change.color || "", size: change.size })
     .returning("stock")
     .execute();
 
@@ -70,7 +73,7 @@ export async function setStock(
   change: StockChange & { stock: number }
 ): Promise<number | null> {
   const row = await manager.findOne(ProductSize, {
-    where: { productId: change.productId, size: change.size },
+    where: { productId: change.productId, color: change.color || "", size: change.size },
     lock: { mode: "pessimistic_write" },
     loadEagerRelations: false,
   });

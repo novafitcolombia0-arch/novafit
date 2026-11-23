@@ -71,7 +71,7 @@ export class AdminLoginComponent {
     this.loading = true;
     this.error = '';
     this.auth.login(this.email, this.password).subscribe({
-      next: () => this.router.navigate(['/admin']),
+      next: () => this.router.navigateByUrl(this.auth.homePath()),
       error: (err) => {
         this.error = err?.status === 429
           ? (err?.error?.message || 'Demasiados intentos. Espera unos minutos.')

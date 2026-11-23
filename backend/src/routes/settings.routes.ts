@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { createRouter } from "../middleware/errors";
 import { AppDataSource } from "../config/data-source";
 import { SiteSetting } from "../entities";
-import { authMiddleware } from "../middleware/auth";
+import { authMiddleware, staffMiddleware } from "../middleware/auth";
 import { heroImagesWithUrls, isDataUrl } from "./image.routes";
 
 const router = createRouter();
@@ -24,7 +24,8 @@ router.get("/", async (req: Request, res: Response) => {
   res.json(await allSettings(req, false));
 });
 
-router.get("/admin", authMiddleware, async (req: Request, res: Response) => {
+// También para finanzas: la página de costos usa la comisión de Wompi
+router.get("/admin", staffMiddleware, async (req: Request, res: Response) => {
   res.json(await allSettings(req, true));
 });
 

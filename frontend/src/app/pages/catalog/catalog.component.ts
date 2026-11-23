@@ -1,13 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
-import { Category, Product } from '../../models/types';
+import { Category, ONE_SIZE, Product, SIZE_ORDER } from '../../models/types';
+import { ColorDotsComponent, cardImage } from '../../shared/color-dots/color-dots.component';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 @Component({
     selector: 'app-catalog',
-    imports: [RouterLink, CurrencyPipe, FormsModule],
+    imports: [RouterLink, CurrencyPipe, FormsModule, ColorDotsComponent],
     template: `
     <div class="max-w-7xl mx-auto px-4 py-8">
       <h1 class="font-display text-3xl font-bold mb-8 text-nova-dark">Tienda</h1>
@@ -49,12 +50,13 @@ import { FormsModule } from '@angular/forms';
               }
             </div>
             <div class="flex gap-1 mb-2">
-              @for (s of product.sizes; track s.id) {
-                <span class="text-[10px] text-nova-gray border border-nova-blush px-1 rounded">{{ s.size }}</span>
+              @for (s of sizeLabels(product); track s) {
+                <span class="text-[10px] text-nova-gray border border-nova-blush px-1 rounded">{{ s }}</span>
               }
             </div>
             <h3 class="font-medium text-sm group-hover:text-nova-rose transition text-nova-dark">{{ product.name }}</h3>
             <p class="text-nova-gray text-sm mt-1">{{ product.price | currency:'COP':'$':'1.0-0' }} COP</p>
+            <app-color-dots [product]="product" (preview)="previewColor[product.id] = $event" />
           </a>
         }
       </div>
@@ -91,8 +93,17 @@ export class CatalogComponent implements OnInit {
   filterByCategory(id: number | null) { this.selectedCategoryId = id; this.loadProducts(); }
   onSearch() { this.loadProducts(); }
 
+  /** Color que se está señalando en cada tarjeta (para mostrar su foto) */
+  previewColor: Record<number, string> = {};
+
   getMainImage(product: Product): string | null {
-    const main = product.images?.find(i => i.isMain) || product.images?.[0];
-    return main ? main.imageData : null;
+    return cardImage(product, this.previewColor[product.id]);
+  }
+
+  /** Tallas sin repetir (con colores, cada talla existe una vez por color) */
+  sizeLabels(product: Product): string[] {
+    const rank = (s: string) => SIZE_ORDER.indexOf(s) + 1 || 99;
+    return [...new Set((product.sizes || []).map(s => s.size))].sort((a, b) => rank(a) - rank(b))
+      .map(s => (s === ONE_SIZE ? 'Talla única' : s));
   }
 }

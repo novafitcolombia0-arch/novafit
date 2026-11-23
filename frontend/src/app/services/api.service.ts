@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import {
   Category, CheckoutRequest, CostRow, Expense, FinanceFilterOptions, FinanceRange, FinanceSummary, InventoryMovement, InventoryProduct,
   MonthlyClose, Order, OrderSummary, Product, Sale, YearlyCloseRow, DiscountCode, Subscriber, WelcomeOffer,
-  CampaignDraft, CampaignsInfo, EmailCampaign,
+  CampaignDraft, CampaignsInfo, EmailCampaign, CustomersReport, Role, User,
 } from '../models/types';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
@@ -155,8 +155,8 @@ export class ApiService {
     return this.http.get<InventoryProduct[]>(`${this.apiUrl}/inventory`, this.adminHeaders());
   }
 
-  adjustInventory(data: { productId: number; size: string; type: 'ENTRADA' | 'SALIDA' | 'AJUSTE'; quantity: number; note?: string }): Observable<{ productId: number; size: string; stock: number }> {
-    return this.http.post<{ productId: number; size: string; stock: number }>(`${this.apiUrl}/inventory/adjust`, data, this.adminHeaders());
+  adjustInventory(data: { productId: number; color?: string; size: string; type: 'ENTRADA' | 'SALIDA' | 'AJUSTE'; quantity: number; note?: string }): Observable<{ productId: number; color: string; size: string; stock: number }> {
+    return this.http.post<{ productId: number; color: string; size: string; stock: number }>(`${this.apiUrl}/inventory/adjust`, data, this.adminHeaders());
   }
 
   getInventoryMovements(productId?: number, type?: string): Observable<InventoryMovement[]> {
@@ -244,5 +244,29 @@ export class ApiService {
 
   deleteSubscriber(id: number): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.apiUrl}/subscribers/${id}`, this.adminHeaders());
+  }
+
+  // ----- Clientes (recompra) -----
+
+  getCustomers(): Observable<CustomersReport> {
+    return this.http.get<CustomersReport>(`${this.apiUrl}/customers`, this.adminHeaders());
+  }
+
+  // ----- Usuarios del panel -----
+
+  getUsers(): Observable<User[]> {
+    return this.http.get<User[]>(`${this.apiUrl}/users`, this.adminHeaders());
+  }
+
+  createUser(data: { email: string; password: string; role: Role }): Observable<User> {
+    return this.http.post<User>(`${this.apiUrl}/users`, data, this.adminHeaders());
+  }
+
+  updateUser(id: number, data: { role?: Role; password?: string }): Observable<User> {
+    return this.http.put<User>(`${this.apiUrl}/users/${id}`, data, this.adminHeaders());
+  }
+
+  deleteUser(id: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/users/${id}`, this.adminHeaders());
   }
 }

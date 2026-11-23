@@ -104,7 +104,7 @@ Darte de baja: ${d.unsubscribeUrl}`;
 // ---------- 2. Compra exitosa (pago aprobado) ----------
 
 const productLines = (order: Order) =>
-  order.items.map((i) => `${i.quantity} × ${i.productName} (talla ${i.size})`);
+  order.items.map((i) => `${i.quantity} × ${i.productName} (${i.color ? `${i.color}, ` : ""}talla ${i.size})`);
 
 export function paymentEmail(order: Order) {
   const { frontendUrl } = emailConfig();

@@ -132,7 +132,7 @@ type SortKey = 'createdAt' | 'total';
                       <div>
                         <h3 class="font-semibold text-nova-dark mb-2">Prendas</h3>
                         @for (item of o.items; track item.id) {
-                          <p class="text-nova-gray">{{ item.quantity }} × {{ item.productName }} — talla {{ item.size }}
+                          <p class="text-nova-gray">{{ item.quantity }} × {{ item.productName }} — @if (item.color) { {{ item.color }} · }talla {{ item.size }}
                             <span class="text-nova-dark">({{ item.unitPrice * item.quantity | currency:'COP':'$':'1.0-0' }})</span></p>
                         }
                         @if (o.discountAmount) {

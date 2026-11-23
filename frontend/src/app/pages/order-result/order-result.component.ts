@@ -45,7 +45,7 @@ import { OrderSummary } from '../../models/types';
           <p class="text-nova-gray mb-3">Pedido <strong class="text-nova-dark">{{ order.reference }}</strong></p>
           @for (item of order.items; track $index) {
             <div class="flex justify-between gap-2 text-nova-gray mb-1">
-              <span>{{ item.quantity }} × {{ item.productName }} ({{ item.size }})</span>
+              <span>{{ item.quantity }} × {{ item.productName }} ({{ item.color ? item.color + ", " : "" }}{{ item.size }})</span>
               <span>{{ item.unitPrice * item.quantity | currency:'COP':'$':'1.0-0' }}</span>
             </div>
           }

@@ -12,10 +12,25 @@ export interface ProductImage {
   imageData: string;
   mimeType: string;
   isMain: boolean;
+  /** Color al que pertenece la foto ("" = se ve con todos los colores) */
+  color?: string;
 }
 
+/** Talla para prendas que no manejan tallas */
+export const ONE_SIZE = 'Única';
+
+/** Orden en que se muestran las tallas */
+export const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', ONE_SIZE];
+
+export interface ProductColor {
+  name: string;
+  hex: string;
+}
+
+/** Variante: color + talla con su propio stock (color "" si la prenda no maneja colores) */
 export interface ProductSize {
   id?: number;
+  color?: string;
   size: string;
   stock: number;
 }
@@ -27,6 +42,7 @@ export interface Product {
   description: string;
   price: number;
   cost?: number | null;
+  colors?: ProductColor[] | null;
   isActive: boolean;
   category: Category;
   categoryId: number;
@@ -34,10 +50,13 @@ export interface Product {
   sizes: ProductSize[];
 }
 
+export type Role = 'admin' | 'finanzas';
+
 export interface User {
   id: number;
   email: string;
-  role: string;
+  role: Role;
+  createdAt?: string;
 }
 
 export interface CartItem {
@@ -46,6 +65,7 @@ export interface CartItem {
   name: string;
   price: number;
   image: string | null;
+  color?: string;
   size: string;
   quantity: number;
   maxQuantity: number;
@@ -58,6 +78,7 @@ export interface OrderItem {
   id?: number;
   productId?: number;
   productName: string;
+  color?: string;
   size: string;
   unitPrice: number;
   quantity: number;
@@ -162,7 +183,7 @@ export interface Order extends OrderSummary {
 }
 
 export interface CheckoutRequest {
-  items: { productId: number; size: string; quantity: number }[];
+  items: { productId: number; color?: string; size: string; quantity: number }[];
   discountCode?: string;
   customer: {
     name: string;
@@ -177,6 +198,7 @@ export interface CheckoutRequest {
 }
 
 export interface InventorySize {
+  color: string;
   size: string;
   stock: number;
   reserved: number;
@@ -191,6 +213,7 @@ export interface InventoryProduct {
   isActive: boolean;
   category: string;
   image: string | null;
+  colors: ProductColor[];
   sizes: InventorySize[];
 }
 
@@ -200,6 +223,7 @@ export interface InventoryMovement {
   id: number;
   productId: number;
   productName: string;
+  color?: string;
   size: string;
   type: MovementType;
   quantity: number;
@@ -291,7 +315,38 @@ export interface CostRow {
   price: number;
   cost: number | null;
   stock: number;
-  sizes: { size: string; stock: number }[];
+  sizes: { color?: string; size: string; stock: number }[];
+}
+
+// ----- Clientes (recompra) -----
+
+export interface Customer {
+  key: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  city: string | null;
+  orders: number;
+  units: number;
+  total: number;
+  firstAt: string;
+  lastAt: string;
+  daysSinceLast: number;
+  avgDaysBetween: number | null;
+  channels: ('WEB' | 'MANUAL')[];
+  history: { reference: string; date: string; channel: 'WEB' | 'MANUAL'; total: number; items: string }[];
+}
+
+export interface CustomersReport {
+  summary: {
+    customers: number;
+    repeatCustomers: number;
+    repeatRate: number;
+    avgOrders: number;
+    repeatRevenueShare: number;
+    avgDaysBetween: number | null;
+  };
+  customers: Customer[];
 }
 
 export interface AuthResponse {

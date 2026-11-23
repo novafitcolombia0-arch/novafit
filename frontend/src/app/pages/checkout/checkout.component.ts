@@ -23,45 +23,50 @@ const DEPARTMENTS = [
 
       <form (ngSubmit)="pay()" #f="ngForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="lg:col-span-2 space-y-4">
+          <p class="text-xs text-nova-gray">Todos los campos con <span class="text-red-600">*</span> son obligatorios.</p>
           <h2 class="font-semibold text-nova-dark">Datos de contacto</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="md:col-span-2">
-              <label class="block text-sm mb-1">Nombre completo *</label>
-              <input [(ngModel)]="form.name" name="name" required autocomplete="name" class="input">
+              <label class="block text-sm mb-1">Nombre completo <span class="req">*</span></label>
+              <input [(ngModel)]="form.name" name="name" #name="ngModel" required minlength="3" autocomplete="name" class="input">
+              @if (name.invalid && name.touched) { <p class="err">Escribe tu nombre completo</p> }
             </div>
             <div>
-              <label class="block text-sm mb-1">Correo electrónico *</label>
-              <input [(ngModel)]="form.email" name="email" type="email" required email autocomplete="email" class="input">
+              <label class="block text-sm mb-1">Correo electrónico <span class="req">*</span></label>
+              <input [(ngModel)]="form.email" name="email" #email="ngModel" type="email" required pattern="[^@ ]+@[^@ ]+[.][^@ ]+" autocomplete="email" class="input">
+              @if (email.invalid && email.touched) { <p class="err">Escribe un correo válido</p> }
             </div>
             <div>
-              <label class="block text-sm mb-1">Celular *</label>
-              <input [(ngModel)]="form.phone" name="phone" type="tel" required minlength="10" autocomplete="tel" placeholder="3001234567" class="input">
+              <label class="block text-sm mb-1">Celular <span class="req">*</span></label>
+              <input [(ngModel)]="form.phone" name="phone" #phone="ngModel" type="tel" inputmode="numeric" required pattern="3[0-9]{9}" maxlength="10" autocomplete="tel" placeholder="3001234567" class="input">
+              @if (phone.invalid && phone.touched) { <p class="err">10 dígitos, empezando por 3</p> }
             </div>
             <div>
-              <label class="block text-sm mb-1">Cédula</label>
-              <input [(ngModel)]="form.documentId" name="documentId" inputmode="numeric" class="input">
+              <label class="block text-sm mb-1">Cédula <span class="req">*</span></label>
+              <input [(ngModel)]="form.documentId" name="documentId" #doc="ngModel" inputmode="numeric" required pattern="[0-9]{5,12}" maxlength="12" class="input">
+              @if (doc.invalid && doc.touched) { <p class="err">Solo números, sin puntos</p> }
             </div>
           </div>
 
           <h2 class="font-semibold text-nova-dark pt-4">Dirección de envío</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm mb-1">Departamento *</label>
+              <label class="block text-sm mb-1">Departamento <span class="req">*</span></label>
               <select [(ngModel)]="form.department" name="department" required class="input">
                 <option value="">Seleccionar...</option>
                 @for (d of departments; track d) { <option [value]="d">{{ d }}</option> }
               </select>
             </div>
             <div>
-              <label class="block text-sm mb-1">Ciudad / municipio *</label>
-              <input [(ngModel)]="form.city" name="city" required autocomplete="address-level2" class="input">
+              <label class="block text-sm mb-1">Ciudad / municipio <span class="req">*</span></label>
+              <input [(ngModel)]="form.city" name="city" required minlength="2" autocomplete="address-level2" class="input">
             </div>
             <div class="md:col-span-2">
-              <label class="block text-sm mb-1">Dirección *</label>
-              <input [(ngModel)]="form.address" name="address" required autocomplete="street-address" placeholder="Calle, número, barrio, apto/casa" class="input">
+              <label class="block text-sm mb-1">Dirección <span class="req">*</span></label>
+              <input [(ngModel)]="form.address" name="address" required minlength="5" autocomplete="street-address" placeholder="Calle, número, barrio, apto/casa" class="input">
             </div>
             <div class="md:col-span-2">
-              <label class="block text-sm mb-1">Notas para la entrega</label>
+              <label class="block text-sm mb-1">Notas para la entrega <span class="text-nova-gray">(opcional)</span></label>
               <textarea [(ngModel)]="form.notes" name="notes" rows="2" class="input"></textarea>
             </div>
           </div>
@@ -69,9 +74,9 @@ const DEPARTMENTS = [
 
         <div class="border border-nova-blush rounded-lg p-5 h-fit">
           <h2 class="font-semibold text-nova-dark mb-4">Tu pedido</h2>
-          @for (item of cart.items(); track item.productId + item.size) {
+          @for (item of cart.items(); track item.productId + '|' + (item.color || '') + '|' + item.size) {
             <div class="flex justify-between gap-2 text-sm text-nova-gray mb-2">
-              <span class="truncate">{{ item.quantity }} × {{ item.name }} ({{ item.size }})</span>
+              <span class="truncate">{{ item.quantity }} × {{ item.name }} ({{ variant(item) }})</span>
               <span class="shrink-0">{{ item.price * item.quantity | currency:'COP':'$':'1.0-0' }}</span>
             </div>
           }
@@ -112,11 +117,14 @@ const DEPARTMENTS = [
 
           <label class="flex items-start gap-2 text-xs text-nova-gray mb-4">
             <input type="checkbox" [(ngModel)]="form.accept" name="accept" required class="mt-0.5">
-            <span>Acepto la <a routerLink="/garantias-y-cambios" target="_blank" class="underline text-nova-dark">política de garantías y cambios</a> y el tratamiento de mis datos para gestionar el pedido.</span>
+            <span><span class="req">*</span> Acepto la <a routerLink="/garantias-y-cambios" target="_blank" class="underline text-nova-dark">política de garantías y cambios</a> y el tratamiento de mis datos para gestionar el pedido.</span>
           </label>
 
           @if (error) {
             <div class="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{{ error }}</div>
+          }
+          @if (f.invalid) {
+            <p class="text-xs text-nova-gray text-center mb-2">Completa todos los datos obligatorios (*) para poder pagar.</p>
           }
 
           <button type="submit" [disabled]="f.invalid || loading || cart.items().length === 0"
@@ -130,6 +138,9 @@ const DEPARTMENTS = [
   `,
     styles: [`
     .input { @apply w-full border border-nova-blush rounded px-3 py-2 text-sm bg-white focus:outline-none focus:border-nova-rose; }
+    .input.ng-invalid.ng-touched { @apply border-red-400; }
+    .req { @apply text-red-600; }
+    .err { @apply text-xs text-red-600 mt-1; }
   `]
 })
 export class CheckoutComponent implements OnInit {
@@ -155,6 +166,8 @@ export class CheckoutComponent implements OnInit {
     return this.freeFrom() > 0 && productsAfterDiscount >= this.freeFrom() ? 0 : this.shippingCost();
   });
   total = computed(() => this.cart.subtotal() - this.discount() + this.shipping());
+
+  variant = CartService.variantLabel;
 
   constructor(public cart: CartService, private api: ApiService, private router: Router) {}
 
@@ -192,10 +205,11 @@ export class CheckoutComponent implements OnInit {
   }
 
   pay() {
+    if (this.loading) return;
     this.loading = true;
     this.error = '';
     const { accept, ...customer } = this.form;
-    const items = this.cart.items().map(i => ({ productId: i.productId, size: i.size, quantity: i.quantity }));
+    const items = this.cart.items().map(i => ({ productId: i.productId, color: i.color || '', size: i.size, quantity: i.quantity }));
     this.api.checkout({ items, customer, discountCode: this.applied()?.code }).subscribe({
       next: res => { window.location.href = res.checkoutUrl; },
       error: err => {

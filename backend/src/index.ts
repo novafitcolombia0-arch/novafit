@@ -15,6 +15,8 @@ import financeRoutes from "./routes/finance.routes";
 import discountRoutes from "./routes/discount.routes";
 import subscriberRoutes from "./routes/subscriber.routes";
 import campaignRoutes from "./routes/campaign.routes";
+import userRoutes from "./routes/user.routes";
+import customerRoutes from "./routes/customer.routes";
 import { errorHandler } from "./middleware/errors";
 import { wompiConfig } from "./services/wompi";
 import { apiLimiter, corsOrigin, hasValidBearer, jwtSecret } from "./config/security";
@@ -51,6 +53,8 @@ app.use("/api/finance", financeRoutes);
 app.use("/api/discounts", discountRoutes);
 app.use("/api/subscribers", subscriberRoutes);
 app.use("/api/campaigns", campaignRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/customers", customerRoutes);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });

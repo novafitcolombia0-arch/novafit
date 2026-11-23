@@ -22,6 +22,10 @@ export class ProductImage {
   @Column({ default: false })
   isMain: boolean;
 
+  // Color al que pertenece la foto ("" = se muestra con todos los colores)
+  @Column({ default: "" })
+  color: string;
+
   @ManyToOne(() => Product, (product) => product.images, { onDelete: "CASCADE" })
   @JoinColumn({ name: "productId" })
   product: Product;

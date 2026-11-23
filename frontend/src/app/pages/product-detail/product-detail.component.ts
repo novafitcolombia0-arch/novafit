@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { combineLatest } from 'rxjs';
 import { ApiService } from '../../services/api.service';
-import { Product } from '../../models/types';
+import { ONE_SIZE, Product, ProductImage, ProductSize, SIZE_ORDER } from '../../models/types';
 import { CurrencyPipe } from '@angular/common';
 import { CartService } from '../../services/cart.service';
 
@@ -15,14 +16,14 @@ import { CartService } from '../../services/cart.service';
           <div>
             <div class="bg-nova-pink rounded-lg overflow-hidden aspect-[3/4] mb-3 cursor-zoom-in">
               @if (mainImage) {
-                <img [src]="mainImage" [alt]="product.name" class="w-full h-full object-cover transition-transform duration-500 ease-out hover:scale-110">
+                <img [src]="mainImage" [alt]="product.name + (selectedColor ? ' ' + selectedColor : '')" class="w-full h-full object-cover transition-transform duration-500 ease-out hover:scale-110">
               } @else {
                 <div class="flex items-center justify-center h-full text-nova-gray">Sin imagen</div>
               }
             </div>
-            @if (product.images && product.images.length > 1) {
-              <div class="flex gap-1.5">
-                @for (img of product.images; track img.id) {
+            @if (visibleImages.length > 1) {
+              <div class="flex flex-wrap gap-1.5">
+                @for (img of visibleImages; track img.id) {
                   <button (click)="mainImage = img.imageData"
                           [class.border-2]="mainImage === img.imageData"
                           [class.border-nova-rose]="mainImage === img.imageData"
@@ -39,23 +40,44 @@ import { CartService } from '../../services/cart.service';
             <h1 class="font-display text-2xl font-bold mb-2 text-nova-dark">{{ product.name }}</h1>
             <p class="text-xl text-nova-gray mb-4">{{ product.price | currency:'COP':'$':'1.0-0' }} COP</p>
 
-            <div class="mb-4">
-              <p class="text-sm font-medium mb-2 text-nova-dark">Talla:</p>
-              <div class="flex gap-2">
-                @for (s of product.sizes; track s.id) {
-                  <button (click)="selectSize(s.size)" [disabled]="s.stock <= 0"
-                          [class.bg-nova-dark]="selectedSize === s.size"
-                          [class.text-white]="selectedSize === s.size"
-                          [class.border-nova-dark]="selectedSize !== s.size"
-                          [class.opacity-40]="s.stock <= 0"
-                          class="border border-nova-blush px-3 py-1.5 text-sm rounded transition">{{ s.size }}</button>
-                }
+            @if (colors.length) {
+              <div class="mb-4">
+                <p class="text-sm font-medium mb-2 text-nova-dark">Color: <span class="font-normal text-nova-gray">{{ selectedColor }}</span></p>
+                <div class="flex flex-wrap gap-2">
+                  @for (c of colors; track c.name) {
+                    <button (click)="selectColor(c.name)" [title]="c.name" [attr.aria-label]="c.name"
+                            [class.ring-2]="selectedColor === c.name" [class.ring-nova-dark]="selectedColor === c.name"
+                            [class.opacity-40]="!colorHasStock(c.name)"
+                            class="w-8 h-8 rounded-full border border-nova-blush ring-offset-2 transition"
+                            [style.background]="c.hex"></button>
+                  }
+                </div>
               </div>
-            </div>
+            }
 
-            <button (click)="addToCart()" [disabled]="!selectedSize"
+            @if (isOneSize) {
+              <p class="text-sm text-nova-dark mb-4">Talla única
+                @if (sizesForColor[0]?.stock! <= 0) { <span class="text-red-600">· agotada</span> }
+              </p>
+            } @else {
+              <div class="mb-4">
+                <p class="text-sm font-medium mb-2 text-nova-dark">Talla:</p>
+                <div class="flex flex-wrap gap-2">
+                  @for (s of sizesForColor; track s.id) {
+                    <button (click)="selectSize(s.size)" [disabled]="s.stock <= 0"
+                            [class.bg-nova-dark]="selectedSize === s.size"
+                            [class.text-white]="selectedSize === s.size"
+                            [class.border-nova-dark]="selectedSize !== s.size"
+                            [class.opacity-40]="s.stock <= 0"
+                            class="border border-nova-blush px-3 py-1.5 text-sm rounded transition">{{ s.size }}</button>
+                  }
+                </div>
+              </div>
+            }
+
+            <button (click)="addToCart()" [disabled]="!canAdd"
                     class="w-full bg-nova-dark text-white py-3 rounded-lg font-medium text-sm uppercase tracking-wider hover:bg-nova-black transition disabled:opacity-50 disabled:cursor-not-allowed mb-2">
-              Agregar a la bolsa
+              {{ soldOut ? 'Agotado' : 'Agregar a la bolsa' }}
             </button>
 
             @if (added) {
@@ -65,16 +87,8 @@ import { CartService } from '../../services/cart.service';
               </div>
             }
 
-            <button (click)="buyOnWhatsApp()" [disabled]="!selectedSize"
-                    class="w-full bg-green-600 text-white py-3 rounded-lg font-medium text-sm uppercase tracking-wider hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-              </svg>
-              Comprar por WhatsApp
-            </button>
-
-            @if (!selectedSize) {
-              <p class="text-center text-nova-gray text-xs mt-1">Selecciona una talla</p>
+            @if (!canAdd && !soldOut) {
+              <p class="text-center text-nova-gray text-xs mt-1">{{ colors.length && !selectedColor ? 'Selecciona un color' : 'Selecciona una talla' }}</p>
             }
 
             <div class="mt-6">
@@ -157,41 +171,84 @@ import { CartService } from '../../services/cart.service';
 export class ProductDetailComponent implements OnInit {
   product: Product | null = null;
   mainImage: string | null = null;
+  selectedColor = '';
   selectedSize = '';
   openSection = 'desc';
   added = false;
-  private whatsappNumber = '573187016549';
 
   constructor(private api: ApiService, private route: ActivatedRoute, private cart: CartService) {}
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
+    // ?color=Rojo llega desde los circulitos de color del catálogo
+    combineLatest([this.route.params, this.route.queryParams]).subscribe(([params, query]) => {
       this.api.getProduct(params['slug']).subscribe(product => {
         this.product = product;
-        const main = product.images?.find(i => i.isMain) || product.images?.[0];
-        this.mainImage = main?.imageData || null;
+        this.selectedSize = '';
+        this.added = false;
+        const wanted = this.colors.find(c => c.name === query['color'])?.name;
+        const firstAvailable = this.colors.find(c => this.colorHasStock(c.name))?.name;
+        this.selectColor(wanted || firstAvailable || this.colors[0]?.name || '');
       });
     });
+  }
+
+  get colors() { return this.product?.colors || []; }
+
+  /** Variantes del color elegido (o todas si la prenda no maneja colores), en orden de talla */
+  get sizesForColor(): ProductSize[] {
+    const rank = (s: string) => SIZE_ORDER.indexOf(s) + 1 || 99;
+    return (this.product?.sizes || [])
+      .filter(s => (s.color || '') === this.selectedColor)
+      .sort((a, b) => rank(a.size) - rank(b.size));
+  }
+
+  get isOneSize() {
+    const sizes = this.sizesForColor;
+    return sizes.length === 1 && sizes[0].size === ONE_SIZE;
+  }
+
+  /** Fotos del color elegido más las que sirven para todos los colores */
+  get visibleImages(): ProductImage[] {
+    const images = this.product?.images || [];
+    if (!this.selectedColor) return images;
+    const forColor = images.filter(i => !i.color || i.color === this.selectedColor);
+    return forColor.length ? forColor : images;
+  }
+
+  get soldOut() { return this.sizesForColor.every(s => s.stock <= 0); }
+
+  get canAdd() {
+    const variant = this.sizesForColor.find(s => s.size === this.selectedSize);
+    return !!variant && variant.stock > 0;
+  }
+
+  colorHasStock(color: string) {
+    return (this.product?.sizes || []).some(s => (s.color || '') === color && s.stock > 0);
+  }
+
+  selectColor(color: string) {
+    this.selectedColor = color;
+    this.added = false;
+    // La foto principal: primero una propia del color, si no la principal general
+    const images = this.visibleImages;
+    const main = images.find(i => i.color === color && i.isMain) || images.find(i => i.color === color)
+      || images.find(i => i.isMain) || images[0];
+    this.mainImage = main?.imageData || null;
+    // Se conserva la talla si existe en el nuevo color; con talla única se elige sola
+    const sizes = this.sizesForColor;
+    if (this.isOneSize) this.selectedSize = sizes[0].size;
+    else if (!sizes.some(s => s.size === this.selectedSize && s.stock > 0)) this.selectedSize = '';
   }
 
   selectSize(size: string) { this.selectedSize = size; this.added = false; }
 
   addToCart() {
-    if (!this.product || !this.selectedSize) return;
-    const main = this.product.images?.find(i => i.isMain) || this.product.images?.[0];
-    this.cart.add(this.product, this.selectedSize, main?.imageData || null);
+    if (!this.product || !this.canAdd) return;
+    this.cart.add(this.product, this.selectedColor, this.selectedSize, this.mainImage);
     this.added = true;
   }
 
   toggle(section: string) {
     this.openSection = this.openSection === section ? '' : section;
-  }
-
-  buyOnWhatsApp() {
-    if (!this.product || !this.selectedSize) return;
-    const msg = encodeURIComponent(
-      `Hola, me interesa el producto *${this.product.name}* en talla *${this.selectedSize}*. ¿Está disponible?`
-    );
-    window.open(`https://wa.me/${this.whatsappNumber}?text=${msg}`, '_blank');
   }
 }
